@@ -2,9 +2,13 @@ import cv2
 import glob
 import os
 
+# Get the current directory
+current_directory = os.getcwd()
+
 # Path to the input and output folders
-input_folder = 'C:/Users/akujo_vr/JAKUJOBI/Career_Jakujobi/Archive/Professional_Experience/Work_Experience/Concerts Coordinator - University Program Council/Original Images'  # Change this to your input folder path
-output_folder = 'C:/Users/akujo_vr/JAKUJOBI/Career_Jakujobi/Archive/Professional_Experience/Work_Experience/Concerts Coordinator - University Program Council/Blurred'  # Change this to your output folder path
+# input_folder = current_directory
+input_folder = current_directory
+output_folder = os.path.join(current_directory, 'blurred')
 
 # Ensure the output folder exists
 if not os.path.exists(output_folder):
