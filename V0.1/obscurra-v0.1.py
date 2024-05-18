@@ -14,8 +14,9 @@ output_folder = os.path.join(current_directory, 'blurred')
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
 
-# Load pre-trained face detection model
+# Load pre-trained face detection models
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+profile_face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_profileface.xml')
 
 # Check if the cascade file loaded correctly
 if face_cascade.empty():
