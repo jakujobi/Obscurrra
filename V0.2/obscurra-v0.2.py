@@ -1,20 +1,17 @@
 import cv2
 import glob
 import os
-from mtcnn import MTCNN
-
 
 class DirectoryManager:
     @staticmethod
+    def get_current_directory():
+        current_directory = os.path.dirname(os.path.realpath(__file__))
+        print("Getting current directory..." + current_directory)
+        return current_directory + '/test'
     # def get_current_directory():
     #     print("Getting current directory..." + os.getcwd())
     #     return os.getcwd() + '/'
     
-    def get_current_directory():
-        current_directory = os.path.dirname(os.path.realpath(__file__))
-        print("Getting current directory..." + current_directory)
-        return current_directory + '/'
-        
     @staticmethod
     def create_output_directory(output_folder):
         try:
