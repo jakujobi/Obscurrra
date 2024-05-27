@@ -15,6 +15,8 @@ Author:
 import cv2
 import glob
 import os
+# import mtcnn
+# import tensorflow
 # from mtcnn import MTCNN
 
 
@@ -98,21 +100,30 @@ class ImageProcessor:
         return img
 
     @staticmethod
-    def convert_to_gray(img):
-        return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    @staticmethod
     def get_output_path(image_path, output_folder):
         base_name = os.path.basename(image_path)
         name, ext = os.path.splitext(base_name)
         return os.path.join(output_folder, f"{name}_b{ext}")
+    
+    @staticmethod
+    def preprocess_image(image):
+        # Convert to grayscale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        # Equalize histogram
+        gray = cv2.equalizeHist(gray)
+
+        # Resize image (if necessary)
+        # gray = cv2.resize(gray, (new_width, new_height))
+
+        return gray
 
     @staticmethod
     def process_single_image(image_path, output_folder, front_face_cascade, profile_face_cascade):
         try:
             print(f"Processing {image_path}")
             img = ImageProcessor.read_image(image_path)
-            gray = ImageProcessor.convert_to_gray(img)
+            gray = ImageProcessor.preprocess_image(img)  # Call the new method here
             faces_front = ImageProcessor.detect_faces(gray, front_face_cascade)
             faces_profile = ImageProcessor.detect_faces(gray, profile_face_cascade)
 
