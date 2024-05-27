@@ -1,3 +1,56 @@
+# obscurra-v0.2.py
+
+"""
+Obscurra v0.2
+
+This script processes images in a specified directory to detect and blur faces.
+It includes enhancements over v0.1 such as modularity, improved error handling, 
+support for additional image formats, and better face detection.
+
+Modules:
+    DirectoryManager: Handles directory operations.
+    ImageProcessor: Manages image processing tasks including loading, converting,
+                    detecting faces, and applying blur effects.
+    MainProgram: The main program class to run the entire process.
+
+Classes:
+    DirectoryManager
+        - get_current_directory: Retrieves the current working directory.
+        - create_output_directory: Ensures the output directory exists.
+    ImageProcessor
+        - load_face_detection_models: Loads pre-trained face detection models.
+        - read_image: Reads an image from the specified path.
+        - convert_to_gray: Converts an image to grayscale.
+        - get_output_path: Generates the output path for a processed image.
+        - process_single_image: Processes a single image to detect and blur faces.
+        - detect_faces: Detects faces in a grayscale image.
+        - blur_faces: Applies a blur effect to detected faces.
+        - process_all_images: Processes all images in the input directory.
+    MainProgram
+        - __init__: Initializes the DirectoryManager and ImageProcessor instances.
+        - run: Executes the main program logic.
+
+Usage:
+    To run the script, execute:
+        python obscurra-v0.2.py
+
+    Ensure OpenCV is installed and place images in the input directory. 
+    The script will process these images and save the blurred versions 
+    in the output directory.
+
+Dependencies:
+    - OpenCV (cv2)
+    - glob
+    - os
+
+License:
+    This project is licensed under the HPL 3 License - see the LICENSE file for details.
+
+Author:
+    John Akujobi (john@jakujobi.com)
+"""
+
+
 import cv2
 import glob
 import os

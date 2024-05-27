@@ -1,3 +1,41 @@
+# obscurra-v0.1.py
+
+"""
+Obscurra v0.1
+
+This script processes images in the current directory to detect and blur faces 
+using OpenCV. It scans all .jpg files, detects faces using pre-trained Haar 
+cascades, and applies a blur effect to each detected face.
+
+Modules:
+    os: Provides a way of using operating system dependent functionality like 
+        reading or writing to the file system.
+    glob: Used to retrieve files/pathnames matching a specified pattern.
+    cv2: OpenCV module for Python, used for image processing.
+
+Functions:
+    None
+
+Usage:
+    To run the script, execute:
+        python obscurra-v0.1.py
+
+    Ensure OpenCV is installed and place .jpg images in the current directory. 
+    The script will process these images and save the blurred versions in the 
+    'blurred' directory within the current directory.
+
+Dependencies:
+    - OpenCV (cv2)
+    - glob
+    - os
+
+License:
+    This project is licensed under the HPL 3 License - see the LICENSE file for details.
+
+Author: John Akujobi
+Date: May 17, 2024
+"""
+
 import cv2
 import glob
 import os
