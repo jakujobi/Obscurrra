@@ -1,47 +1,8 @@
-# obscurra-v0.2.py
+# obscurra-v0.3.py
 
 """
-Obscurra v0.2
+Obscurra v0.3
 
-This script processes images in a specified directory to detect and blur faces.
-It includes enhancements over v0.1 such as modularity, improved error handling, 
-support for additional image formats, and better face detection.
-
-Modules:
-    DirectoryManager: Handles directory operations.
-    ImageProcessor: Manages image processing tasks including loading, converting,
-                    detecting faces, and applying blur effects.
-    MainProgram: The main program class to run the entire process.
-
-Classes:
-    DirectoryManager
-        - get_current_directory: Retrieves the current working directory.
-        - create_output_directory: Ensures the output directory exists.
-    ImageProcessor
-        - load_face_detection_models: Loads pre-trained face detection models.
-        - read_image: Reads an image from the specified path.
-        - convert_to_gray: Converts an image to grayscale.
-        - get_output_path: Generates the output path for a processed image.
-        - process_single_image: Processes a single image to detect and blur faces.
-        - detect_faces: Detects faces in a grayscale image.
-        - blur_faces: Applies a blur effect to detected faces.
-        - process_all_images: Processes all images in the input directory.
-    MainProgram
-        - __init__: Initializes the DirectoryManager and ImageProcessor instances.
-        - run: Executes the main program logic.
-
-Usage:
-    To run the script, execute:
-        python obscurra-v0.2.py
-
-    Ensure OpenCV is installed and place images in the input directory. 
-    The script will process these images and save the blurred versions 
-    in the output directory.
-
-Dependencies:
-    - OpenCV (cv2)
-    - glob
-    - os
 
 License:
     This project is licensed under the HPL 3 License - see the LICENSE file for details.
@@ -54,6 +15,8 @@ Author:
 import cv2
 import glob
 import os
+# from mtcnn import MTCNN
+
 
 class DirectoryManager:
     TEST_DIR_SUFFIX = '/test'
@@ -89,19 +52,42 @@ class DirectoryManager:
 
 
 class ImageProcessor:
-    FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
     IMAGE_EXTENSIONS = ['*.jpg', '*.jpeg', '*.png', '*.webp']
     BLUR_EFFECT = (30, 30)
+    FRONT_FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+    PROFILE_FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_profileface.xml'
+    SCALE_FACTOR = 1.05
+    MIN_NEIGHBORS = 3
+    MIN_SIZE = (30, 30)
+
+    def __init__(self):
+        self._front_face_cascade = self._load_face_detection_model(self.FRONT_FACE_CASCADE_PATH)
+        self._profile_face_cascade = self._load_face_detection_model(self.PROFILE_FACE_CASCADE_PATH)
 
     @staticmethod
-    def load_face_detection_models():
+    def _load_face_detection_model(model_path):
         try:
-            face_cascade = cv2.CascadeClassifier(ImageProcessor.FACE_CASCADE_PATH)
-            if face_cascade.empty():
-                raise ValueError("Error loading cascade file. Check the path to haarcascade_frontalface_default.xml.")
-            return face_cascade
+            model = cv2.CascadeClassifier(model_path)
+            return model
         except Exception as e:
-            print(f"Error loading face detection models: {e}")
+            print(f"Error loading face detection model: {e}")
+            raise e
+
+    @property
+    def front_face_cascade(self):
+        return self._front_face_cascade
+
+    @property
+    def profile_face_cascade(self):
+        return self._profile_face_cascade
+
+    @staticmethod
+    def detect_faces(gray, face_cascade):
+        try:
+            faces = face_cascade.detectMultiScale(gray, scaleFactor=ImageProcessor.SCALE_FACTOR, minNeighbors=ImageProcessor.MIN_NEIGHBORS, minSize=ImageProcessor.MIN_SIZE)
+            return faces
+        except Exception as e:
+            print(f"Error detecting faces: {e}")
             raise e
 
     @staticmethod
@@ -122,12 +108,25 @@ class ImageProcessor:
         return os.path.join(output_folder, f"{name}_b{ext}")
 
     @staticmethod
-    def process_single_image(image_path, output_folder, face_cascade):
+    def process_single_image(image_path, output_folder, front_face_cascade, profile_face_cascade):
         try:
             print(f"Processing {image_path}")
             img = ImageProcessor.read_image(image_path)
             gray = ImageProcessor.convert_to_gray(img)
-            faces = ImageProcessor.detect_faces(gray, face_cascade)
+            faces_front = ImageProcessor.detect_faces(gray, front_face_cascade)
+            faces_profile = ImageProcessor.detect_faces(gray, profile_face_cascade)
+
+            # Check if both lists are not empty
+            if len(faces_front) > 0 and len(faces_profile) > 0:
+                faces = list(set(map(tuple, faces_front)) | set(map(tuple, faces_profile)))
+                faces = [list(face) for face in faces]
+            elif len(faces_front) > 0:
+                faces = faces_front
+            elif len(faces_profile) > 0:
+                faces = faces_profile
+            else:
+                faces = []
+
             if len(faces) > 0:
                 print(f"Detected {len(faces)} face(s) in {image_path}.")
                 ImageProcessor.blur_faces(img, faces)
@@ -161,16 +160,17 @@ class ImageProcessor:
             raise e
 
     @staticmethod
-    def process_all_images(input_folder, output_folder, face_cascade):
+    def process_all_images(input_folder, output_folder, front_face_cascade, profile_face_cascade):
         try:
             for extension in ImageProcessor.IMAGE_EXTENSIONS:
                 for filename in glob.glob(os.path.join(input_folder, extension)):
-                    ImageProcessor.process_single_image(filename, output_folder, face_cascade)
+                    ImageProcessor.process_single_image(filename, output_folder, front_face_cascade, profile_face_cascade)
             print("Face blurring complete.")
         except Exception as e:
             print(f"Error processing all images: {e}")
             raise e
         
+
 class MainProgram:
     OUTPUT_FOLDER_NAME = 'blurred'
 
@@ -190,11 +190,8 @@ class MainProgram:
             # Create the output folder
             self.directory_manager.create_output_directory(output_folder)
 
-            # Load pre-trained face detection models
-            face_cascade = self.image_processor.load_face_detection_models()
-
             # Process all images
-            self.image_processor.process_all_images(input_folder, output_folder, face_cascade)
+            self.image_processor.process_all_images(input_folder, output_folder, self.image_processor.front_face_cascade, self.image_processor.profile_face_cascade)
         except Exception as e:
             print(f"Error running the program: {e}")
             raise e
