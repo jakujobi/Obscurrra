@@ -3,6 +3,8 @@ import glob
 import os
 
 class DirectoryManager:
+    TEST_DIR_SUFFIX = '/test'
+
     @staticmethod
     def get_current_directory():
         """
@@ -17,7 +19,8 @@ class DirectoryManager:
         try:
             current_directory = os.path.dirname(os.path.realpath(__file__))
             print("Getting current directory..." + current_directory)
-            return current_directory + '/test'
+            # return current_directory + '/test'
+            return current_directory + DirectoryManager.TEST_DIR_SUFFIX
         except Exception as e:
             print(f"Error getting current directory: {e}")
             raise e
@@ -33,10 +36,14 @@ class DirectoryManager:
 
 
 class ImageProcessor:
+    FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+    IMAGE_EXTENSIONS = ['*.jpg', '*.jpeg', '*.png', '*.webp']
+    BLUR_EFFECT = (30, 30)
+
     @staticmethod
     def load_face_detection_models():
         try:
-            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            face_cascade = cv2.CascadeClassifier(ImageProcessor.FACE_CASCADE_PATH)
             if face_cascade.empty():
                 raise ValueError("Error loading cascade file. Check the path to haarcascade_frontalface_default.xml.")
             return face_cascade
@@ -94,7 +101,7 @@ class ImageProcessor:
         try:
             for (x, y, w, h) in faces:
                 # Apply blur effect to the face region
-                img[y:y+h, x:x+w] = cv2.blur(img[y:y+h, x:x+w], (30, 30))
+                img[y:y+h, x:x+w] = cv2.blur(img[y:y+h, x:x+w], ImageProcessor.BLUR_EFFECT)
             return img
         except Exception as e:
             print(f"Error blurring faces: {e}")
@@ -103,8 +110,7 @@ class ImageProcessor:
     @staticmethod
     def process_all_images(input_folder, output_folder, face_cascade):
         try:
-            extensions = ['*.jpg', '*.jpeg', '*.png', '*.webp']
-            for extension in extensions:
+            for extension in ImageProcessor.IMAGE_EXTENSIONS:
                 for filename in glob.glob(os.path.join(input_folder, extension)):
                     ImageProcessor.process_single_image(filename, output_folder, face_cascade)
             print("Face blurring complete.")
@@ -113,6 +119,8 @@ class ImageProcessor:
             raise e
         
 class MainProgram:
+    OUTPUT_FOLDER_NAME = 'blurred'
+
     def __init__(self):
         self.directory_manager = DirectoryManager()
         self.image_processor = ImageProcessor()
@@ -124,7 +132,7 @@ class MainProgram:
 
             # Path to the input and output folders
             input_folder = current_directory
-            output_folder = os.path.join(current_directory, 'blurred')
+            output_folder = os.path.join(current_directory, MainProgram.OUTPUT_FOLDER_NAME)
 
             # Create the output folder
             self.directory_manager.create_output_directory(output_folder)
