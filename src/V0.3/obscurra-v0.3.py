@@ -90,14 +90,20 @@ class ImageProcessor:
             faces.extend(faces_mtcnn)
         if 'frontalface' in models:
             faces_frontal = self.detect_faces(gray_image, self.front_face_cascade)
-            faces.extend(faces_frontal)
+            for face in faces_frontal:
+                if not any(self.is_same_face(face, existing_face) for existing_face in faces):
+                    faces.append(face)
         if 'profileface' in models:
             faces_profile = self.detect_faces(gray_image, self.profile_face_cascade)
-            faces.extend(faces_profile)
-        # Remove duplicates
-        faces = list(set(map(tuple, faces)))
-        faces = [list(face) for face in faces]
+            for face in faces_profile:
+                if not any(self.is_same_face(face, existing_face) for existing_face in faces):
+                    faces.append(face)
         return faces
+
+    def is_same_face(self, face1, face2):
+        x1, y1, w1, h1 = face1
+        x2, y2, w2, h2 = face2
+        return abs(x1 - x2) < w1 / 2 and abs(y1 - y2) < h1 / 2
 
     @staticmethod
     def detect_faces(gray, face_cascade):
