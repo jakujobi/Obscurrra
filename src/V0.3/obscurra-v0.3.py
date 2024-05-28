@@ -41,7 +41,7 @@ class DirectoryManager:
 
 class ImageProcessor:
     IMAGE_EXTENSIONS = ['*.jpg', '*.jpeg', '*.png', '*.webp']
-    BLUR_EFFECT = (30, 30)
+    BLUR_EFFECT = (15, 15)
     FRONT_FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
     PROFILE_FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_profileface.xml'
     _MAX_IMAGE_SIZE = 1000  # Maximum size of the image's largest dimension
