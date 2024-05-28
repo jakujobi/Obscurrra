@@ -41,15 +41,15 @@ class DirectoryManager:
 
 class ImageProcessor:
     IMAGE_EXTENSIONS = ['*.jpg', '*.jpeg', '*.png', '*.webp']
-    BLUR_EFFECT = (15, 15)
+    BLUR_EFFECT = (70, 70)
     FRONT_FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
     PROFILE_FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_profileface.xml'
     _MAX_IMAGE_SIZE = 1000  # Maximum size of the image's largest dimension
+    
     def __init__(self):
         self._front_face_cascade = self._load_face_detection_model(self.FRONT_FACE_CASCADE_PATH)
         self._profile_face_cascade = self._load_face_detection_model(self.PROFILE_FACE_CASCADE_PATH)
         self._mtcnn_detector = MTCNN()
-
 
     @property
     def max_image_size(self):
@@ -158,18 +158,23 @@ class ImageProcessor:
     def process_single_image(self, image_path, output_folder, models):
         try:
             print(f"Processing {image_path}")
-            img = self.read_image(image_path)
-            img = self.resize_image(img, self.max_image_size)  # Resize the image using max_image_size
-            gray = self.preprocess_image(img)
-            faces = self.choose_model(models, img, gray)
+            original_img = self.read_image(image_path)
+            resized_img = self.resize_image(original_img.copy(), self.max_image_size)  # Resize the copy for face detection
+            gray = self.preprocess_image(resized_img)
+            faces = self.choose_model(models, resized_img, gray)
+
+            # Scale factor for translating face coordinates back to original image size
+            scale_factor = max(original_img.shape[:2]) / max(resized_img.shape[:2])
 
             if len(faces) > 0:
                 print(f"Detected {len(faces)} face(s) in {image_path}.")
-                self.blur_faces(img, faces)
+                # Scale the face coordinates back to original image size
+                faces = [(int(x*scale_factor), int(y*scale_factor), int(w*scale_factor), int(h*scale_factor)) for (x, y, w, h) in faces]
+                self.blur_faces(original_img, faces)
             else:
                 print(f"No faces detected in {image_path}.")
             output_path = self.get_output_path(image_path, output_folder)
-            cv2.imwrite(output_path, img)
+            cv2.imwrite(output_path, original_img)
             print(f"Processed and saved {output_path}")
         except Exception as e:
             print(f"Error processing {image_path}: {e}")
