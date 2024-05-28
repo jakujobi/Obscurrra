@@ -44,11 +44,23 @@ class ImageProcessor:
     BLUR_EFFECT = (30, 30)
     FRONT_FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
     PROFILE_FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_profileface.xml'
-
+    _MAX_IMAGE_SIZE = 1000  # Maximum size of the image's largest dimension
     def __init__(self):
         self._front_face_cascade = self._load_face_detection_model(self.FRONT_FACE_CASCADE_PATH)
         self._profile_face_cascade = self._load_face_detection_model(self.PROFILE_FACE_CASCADE_PATH)
         self._mtcnn_detector = MTCNN()
+
+
+    @property
+    def max_image_size(self):
+        return self._MAX_IMAGE_SIZE
+
+    @max_image_size.setter
+    def max_image_size(self, value):
+        if value > 0:
+            self._MAX_IMAGE_SIZE = value
+        else:
+            raise ValueError("Maximum image size must be greater than 0.")
 
     @staticmethod
     def _load_face_detection_model(model_path):
@@ -126,11 +138,22 @@ class ImageProcessor:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         gray = cv2.equalizeHist(gray)
         return gray
+    
+    @staticmethod
+    def resize_image(image, max_dimension):
+        height, width = image.shape[:2]
+        if max(height, width) > max_dimension:
+            scale = max_dimension / max(height, width)
+            new_size = (int(width * scale), int(height * scale))
+            resized_image = cv2.resize(image, new_size, interpolation=cv2.INTER_AREA)
+            return resized_image
+        return image
 
     def process_single_image(self, image_path, output_folder, models):
         try:
             print(f"Processing {image_path}")
             img = self.read_image(image_path)
+            img = self.resize_image(img, self.max_image_size)  # Resize the image using max_image_size
             gray = self.preprocess_image(img)
             faces = self.choose_model(models, img, gray)
 
