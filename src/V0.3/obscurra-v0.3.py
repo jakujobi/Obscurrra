@@ -15,9 +15,9 @@ Author:
 import cv2
 import glob
 import os
-# import mtcnn
-# import tensorflow
-# from mtcnn import MTCNN
+import mtcnn
+import tensorflow
+from mtcnn import MTCNN
 
 
 class DirectoryManager:
@@ -65,6 +65,7 @@ class ImageProcessor:
     def __init__(self):
         self._front_face_cascade = self._load_face_detection_model(self.FRONT_FACE_CASCADE_PATH)
         self._profile_face_cascade = self._load_face_detection_model(self.PROFILE_FACE_CASCADE_PATH)
+        self._mtcnn_detector = MTCNN()
 
     @staticmethod
     def _load_face_detection_model(model_path):
@@ -82,6 +83,10 @@ class ImageProcessor:
     @property
     def profile_face_cascade(self):
         return self._profile_face_cascade
+
+    @property
+    def mtcnn_detector(self):
+        return self._mtcnn_detector
 
     @staticmethod
     def detect_faces(gray, face_cascade):
@@ -119,7 +124,7 @@ class ImageProcessor:
         return gray
 
     @staticmethod
-    def process_single_image(image_path, output_folder, front_face_cascade, profile_face_cascade):
+    def process_single_image(image_path, output_folder, front_face_cascade, profile_face_cascade, mtcnn_detector):
         try:
             print(f"Processing {image_path}")
             img = ImageProcessor.read_image(image_path)
@@ -140,7 +145,12 @@ class ImageProcessor:
 
             if len(faces) > 0:
                 print(f"Detected {len(faces)} face(s) in {image_path}.")
-                ImageProcessor.blur_faces(img, faces)
+                # Use MTCNN on the detected areas
+                for (x, y, w, h) in faces:
+                    face_img = img[y:y+h, x:x+w]
+                    result = mtcnn_detector.detect_faces(face_img)
+                    if result:  # If MTCNN detects a face
+                        ImageProcessor.blur_faces(face_img, [(result[0]['box'][0], result[0]['box'][1], result[0]['box'][2], result[0]['box'][3])])
             else:
                 print(f"No faces detected in {image_path}.")
             output_path = ImageProcessor.get_output_path(image_path, output_folder)
@@ -171,16 +181,15 @@ class ImageProcessor:
             raise e
 
     @staticmethod
-    def process_all_images(input_folder, output_folder, front_face_cascade, profile_face_cascade):
+    def process_all_images(input_folder, output_folder, front_face_cascade, profile_face_cascade, mtcnn_detector):
         try:
             for extension in ImageProcessor.IMAGE_EXTENSIONS:
                 for filename in glob.glob(os.path.join(input_folder, extension)):
-                    ImageProcessor.process_single_image(filename, output_folder, front_face_cascade, profile_face_cascade)
+                    ImageProcessor.process_single_image(filename, output_folder, front_face_cascade, profile_face_cascade, mtcnn_detector)
             print("Face blurring complete.")
         except Exception as e:
             print(f"Error processing all images: {e}")
             raise e
-        
 
 class MainProgram:
     OUTPUT_FOLDER_NAME = 'blurred'
@@ -202,7 +211,7 @@ class MainProgram:
             self.directory_manager.create_output_directory(output_folder)
 
             # Process all images
-            self.image_processor.process_all_images(input_folder, output_folder, self.image_processor.front_face_cascade, self.image_processor.profile_face_cascade)
+            self.image_processor.process_all_images(input_folder, output_folder, self.image_processor.front_face_cascade, self.image_processor.profile_face_cascade, self.image_processor.mtcnn_detector)
         except Exception as e:
             print(f"Error running the program: {e}")
             raise e
