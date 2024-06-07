@@ -1,7 +1,7 @@
-# obscurra-v0.3.py
+# obscurrra-v0.3.py
 
 """
-Obscurra v0.3
+Obscurrra v0.3
 
 License:
     This project is licensed under the HPL 3 License - see the LICENSE file for details.
@@ -10,7 +10,7 @@ Author:
     John Akujobi (john@jakujobi.com)
 
 Description:
-    Obscurra v0.3 is a Python-based image processing tool designed to detect and blur faces in images.
+    Obscurrra v0.3 is a Python-based image processing tool designed to detect and blur faces in images.
     It supports multiple face detection models including MTCNN, Haar Cascades for frontal and profile faces.
     The program processes all images in a specified directory, detects faces using the selected models, 
     and applies a blur effect to the detected faces before saving the modified images to an output directory.
