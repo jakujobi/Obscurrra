@@ -2,6 +2,7 @@ import cv2
 import glob
 import os
 import logging
+import time
 from mtcnn import MTCNN
 from concurrent.futures import ThreadPoolExecutor
 
@@ -161,20 +162,30 @@ class ImageProcessor:
             output_path = self.get_output_path(image_path, output_folder)
             cv2.imwrite(output_path, original_img)
             logging.info(f"Processed and saved {output_path}")
+            return {'faces': len(faces)}
         except Exception as e:
             logging.error(f"Error processing {image_path}: {e}")
             raise e
 
     def process_all_images(self, input_folder, output_folder, models):
         try:
+            start_time = time.time()  # Start timing
+            total_faces = 0
+            total_images = 0
             with ThreadPoolExecutor() as executor:
                 futures = []
                 for extension in self.IMAGE_EXTENSIONS:
                     for filename in glob.glob(os.path.join(input_folder, extension)):
                         futures.append(executor.submit(self.process_single_image, filename, output_folder, models))
                 for future in futures:
-                    future.result()  # To catch any exceptions from threads
-            logging.info("Face blurring complete.")
+                    result = future.result()  # To catch any exceptions from threads
+                    total_faces += result['faces']
+                    total_images += 1
+            end_time = time.time()  # End timing
+            elapsed_time = end_time - start_time  # Calculate elapsed time
+            logging.info(f"Face blurring complete. Time taken: {elapsed_time} seconds.")
+            logging.info(f"Total images processed: {total_images}")
+            logging.info(f"Total faces found: {total_faces}")
         except Exception as e:
             logging.error(f"Error processing all images: {e}")
             raise e

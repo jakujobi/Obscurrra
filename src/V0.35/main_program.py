@@ -1,4 +1,4 @@
-# src/main_program.py
+# main_program.py
 
 import logging
 import os

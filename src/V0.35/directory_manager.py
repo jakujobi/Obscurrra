@@ -1,4 +1,4 @@
-# src/directory_manager.py
+# directory_manager.py
 
 import os
 import logging

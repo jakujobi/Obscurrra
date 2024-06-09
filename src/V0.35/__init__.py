@@ -1,4 +1,4 @@
-# src/__init__.py
+# __init__.py
 
 from .directory_manager import DirectoryManager
 from .image_processor import ImageProcessor
