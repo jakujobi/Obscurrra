@@ -1,254 +1,237 @@
-# obscurrra-v0.3.py
-
-"""
-Obscurrra v0.3
-
-License:
-    This project is licensed under the HPL 3 License - see the LICENSE file for details.
-
-Author:
-    John Akujobi (john@jakujobi.com)
-
-Description:
-    Obscurrra v0.3 is a Python-based image processing tool designed to detect and blur faces in images.
-    It supports multiple face detection models including MTCNN, Haar Cascades for frontal and profile faces.
-    The program processes all images in a specified directory, detects faces using the selected models, 
-    and applies a blur effect to the detected faces before saving the modified images to an output directory.
-    
-Features:
-    - Detects faces using MTCNN, Haar Cascades for frontal faces, and Haar Cascades for profile faces.
-    - Processes images with various extensions including jpg, jpeg, png, and webp.
-    - Resizes images to a maximum specified dimension before processing.
-    - Applies a blur effect to detected faces and saves the processed images.
-    
-Usage:
-    The main script runs the `MainProgram` class which handles the directory management and image processing. 
-    It can be executed directly to process images in the current directory's test folder.
-
-Dependencies:
-    - OpenCV (cv2)
-    - MTCNN
-    - glob
-    - os
-    - logging
-"""
-
-import cv2
-import glob
+import tkinter as tk
+from tkinter import filedialog, messagebox, ttk, scrolledtext
 import os
 import logging
-from mtcnn import MTCNN
-from concurrent.futures import ThreadPoolExecutor
+from main_program import MainProgram
 
-# Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-class DirectoryManager:
-    TEST_DIR_SUFFIX = '/test'
-
-    @staticmethod
-    def get_current_directory():
-        try:
-            current_directory = os.path.dirname(os.path.realpath(__file__))
-            logging.info(f"Getting current directory: {current_directory}")
-            return current_directory + DirectoryManager.TEST_DIR_SUFFIX
-        except Exception as e:
-            logging.error(f"Error getting current directory: {e}")
-            raise e
-
-    @staticmethod
-    def create_output_directory(output_folder):
-        try:
-            if not os.path.exists(output_folder):
-                os.makedirs(output_folder)
-                logging.info(f"Output directory created at: {output_folder}")
-        except Exception as e:
-            logging.error(f"Error creating output directory {output_folder}: {e}")
-            raise e
-
-class ImageProcessor:
-    IMAGE_EXTENSIONS = ['*.jpg', '*.jpeg', '*.png', '*.webp']
-    BLUR_EFFECT = (70, 70)
-    FRONT_FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-    PROFILE_FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_profileface.xml'
-    _MAX_IMAGE_SIZE = 1000  # Maximum size of the image's largest dimension
-
+class ObscurrraGUI(tk.Tk):
     def __init__(self):
-        self._front_face_cascade = self._load_face_detection_model(self.FRONT_FACE_CASCADE_PATH)
-        self._profile_face_cascade = self._load_face_detection_model(self.PROFILE_FACE_CASCADE_PATH)
-        self._mtcnn_detector = MTCNN()
+        super().__init__()
 
-    @property
-    def max_image_size(self):
-        return self._MAX_IMAGE_SIZE
+        self.title("Obscurrra")
+        self.geometry("800x600")
 
-    @max_image_size.setter
-    def max_image_size(self, value):
-        if value > 0:
-            self._MAX_IMAGE_SIZE = value
+        self.main_program = MainProgram()
+
+        self.create_widgets()
+
+    def create_widgets(self):
+        # Top Section: File and Folder Selection
+        top_frame = tk.Frame(self)
+        top_frame.pack(pady=10)
+
+        self.input_folder_label = tk.Label(top_frame, text="Input Folder:")
+        self.input_folder_label.grid(row=0, column=0, padx=5, pady=5)
+        self.input_folder_entry = tk.Entry(top_frame, width=50)
+        self.input_folder_entry.grid(row=0, column=1, padx=5, pady=5)
+        self.input_folder_button = tk.Button(top_frame, text="Browse", command=self.browse_input_folder)
+        self.input_folder_button.grid(row=0, column=2, padx=5, pady=5)
+
+        self.output_folder_label = tk.Label(top_frame, text="Output Folder:")
+        self.output_folder_label.grid(row=1, column=0, padx=5, pady=5)
+        self.output_folder_entry = tk.Entry(top_frame, width=50)
+        self.output_folder_entry.grid(row=1, column=1, padx=5, pady=5)
+        self.output_folder_button = tk.Button(top_frame, text="Browse", command=self.browse_output_folder)
+        self.output_folder_button.grid(row=1, column=2, padx=5, pady=5)
+
+        # Middle Section: Image and Model Selection
+        middle_frame = tk.Frame(self)
+        middle_frame.pack(pady=10)
+
+        self.images_label = tk.Label(middle_frame, text="Images:")
+        self.images_label.grid(row=0, column=0, padx=5, pady=5)
+        self.images_listbox = tk.Listbox(middle_frame, selectmode=tk.MULTIPLE, width=50, height=10)
+        self.images_listbox.grid(row=0, column=1, padx=5, pady=5)
+        self.load_images_button = tk.Button(middle_frame, text="Load Images", command=self.load_images)
+        self.load_images_button.grid(row=0, column=2, padx=5, pady=5)
+
+        self.models_label = tk.Label(middle_frame, text="Face Detection Models:")
+        self.models_label.grid(row=1, column=0, padx=5, pady=5)
+        self.mtcnn_var = tk.BooleanVar()
+        self.mtcnn_checkbox = tk.Checkbutton(middle_frame, text="MTCNN", variable=self.mtcnn_var)
+        self.mtcnn_checkbox.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        self.frontalface_var = tk.BooleanVar()
+        self.frontalface_checkbox = tk.Checkbutton(middle_frame, text="Frontal Face", variable=self.frontalface_var)
+        self.frontalface_checkbox.grid(row=1, column=1, padx=5, pady=5)
+        self.profileface_var = tk.BooleanVar()
+        self.profileface_checkbox = tk.Checkbutton(middle_frame, text="Profile Face", variable=self.profileface_var)
+        self.profileface_checkbox.grid(row=1, column=1, padx=5, pady=5, sticky="e")
+
+        # Settings Section: Preferences
+        settings_frame = tk.Frame(self)
+        settings_frame.pack(pady=10)
+
+        self.max_image_size_label = tk.Label(settings_frame, text="Max Image Size:")
+        self.max_image_size_label.grid(row=0, column=0, padx=5, pady=5)
+        self.max_image_size_entry = tk.Entry(settings_frame, width=10)
+        self.max_image_size_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        self.blur_intensity_label = tk.Label(settings_frame, text="Blur Effect Intensity:")
+        self.blur_intensity_label.grid(row=1, column=0, padx=5, pady=5)
+        self.blur_intensity_slider = tk.Scale(settings_frame, from_=1, to=100, orient=tk.HORIZONTAL)
+        self.blur_intensity_slider.grid(row=1, column=1, padx=5, pady=5)
+
+        # Bottom Section: Process Control and Log
+        bottom_frame = tk.Frame(self)
+        bottom_frame.pack(pady=10)
+
+        self.start_button = tk.Button(bottom_frame, text="Start Processing", command=self.start_processing)
+        self.start_button.grid(row=0, column=0, padx=5, pady=5)
+        self.cancel_button = tk.Button(bottom_frame, text="Cancel Processing", command=self.cancel_processing)
+        self.cancel_button.grid(row=0, column=1, padx=5, pady=5)
+
+        self.progress_label = tk.Label(bottom_frame, text="Progress:")
+        self.progress_label.grid(row=1, column=0, padx=5, pady=5)
+        self.progress_bar = ttk.Progressbar(bottom_frame, length=200)
+        self.progress_bar.grid(row=1, column=1, padx=5, pady=5)
+
+        self.log_label = tk.Label(bottom_frame, text="Log:")
+        self.log_label.grid(row=2, column=0, padx=5, pady=5)
+        self.log_display = scrolledtext.ScrolledText(bottom_frame, width=50, height=10)
+        self.log_display.grid(row=2, column=1, padx=5, pady=5)
+
+        # Preview Section: Image Preview
+        preview_frame = tk.Frame(self)
+        preview_frame.pack(pady=10)
+
+        self.original_image_label = tk.Label(preview_frame, text="Original Image:")
+        self.original_image_label.grid(row=0, column=0, padx=5, pady=5)
+        self.original_image_canvas = tk.Canvas(preview_frame, width=200, height=200)
+        self.original_image_canvas.grid(row=0, column=1, padx=5, pady=5)
+
+        self.processed_image_label = tk.Label(preview_frame, text="Processed Image:")
+        self.processed_image_label.grid(row=1, column=0, padx=5, pady=5)
+        self.processed_image_canvas = tk.Canvas(preview_frame, width=200, height=200)
+        self.processed_image_canvas.grid(row=1, column=1, padx=5, pady=5)
+
+        self.zoom_in_button = tk.Button(preview_frame, text="Zoom In", command=self.zoom_in)
+        self.zoom_in_button.grid(row=2, column=0, padx=5, pady=5)
+        self.zoom_out_button = tk.Button(preview_frame, text="Zoom Out", command=self.zoom_out)
+        self.zoom_out_button.grid(row=2, column=1, padx=5, pady=5)
+
+        # Batch Processing Section
+        batch_frame = tk.Frame(self)
+        batch_frame.pack(pady=10)
+
+        self.batch_process_button = tk.Button(batch_frame, text="Batch Process", command=self.batch_process)
+        self.batch_process_button.grid(row=0, column=0, padx=5, pady=5)
+        self.total_images_label = tk.Label(batch_frame, text="Total Images Processed:")
+        self.total_images_label.grid(row=1, column=0, padx=5, pady=5)
+        self.total_images_count = tk.Label(batch_frame, text="0")
+        self.total_images_count.grid(row=1, column=1, padx=5, pady=5)
+        self.total_faces_label = tk.Label(batch_frame, text="Total Faces Detected:")
+        self.total_faces_label.grid(row=2, column=0, padx=5, pady=5)
+        self.total_faces_count = tk.Label(batch_frame, text="0")
+        self.total_faces_count.grid(row=2, column=1, padx=5, pady=5)
+
+        # Help and Feedback Section
+        help_frame = tk.Frame(self)
+        help_frame.pack(pady=10)
+
+        self.help_button = tk.Button(help_frame, text="Help", command=self.show_help)
+        self.help_button.grid(row=0, column=0, padx=5, pady=5)
+        self.save_log_button = tk.Button(help_frame, text="Save Log", command=self.save_log)
+        self.save_log_button.grid(row=0, column=1, padx=5, pady=5)
+
+        # Exit Section
+        exit_frame = tk.Frame(self)
+        exit_frame.pack(pady=10)
+
+        self.save_settings_button = tk.Button(exit_frame, text="Save Settings", command=self.save_settings)
+        self.save_settings_button.grid(row=0, column=0, padx=5, pady=5)
+        self.exit_button = tk.Button(exit_frame, text="Exit", command=self.exit_application)
+        self.exit_button.grid(row=0, column=1, padx=5, pady=5)
+
+    def browse_input_folder(self):
+        folder_selected = filedialog.askdirectory()
+        if folder_selected:
+            self.input_folder_entry.delete(0, tk.END)
+            self.input_folder_entry.insert(0, folder_selected)
+
+    def browse_output_folder(self):
+        folder_selected = filedialog.askdirectory()
+        if folder_selected:
+            self.output_folder_entry.delete(0, tk.END)
+            self.output_folder_entry.insert(0, folder_selected)
+
+    def load_images(self):
+        input_folder = self.input_folder_entry.get()
+        if os.path.isdir(input_folder):
+            self.images_listbox.delete(0, tk.END)
+            for image in os.listdir(input_folder):
+                if image.lower().endswith(('jpg', 'jpeg', 'png', 'webp')):
+                    self.images_listbox.insert(tk.END, image)
         else:
-            raise ValueError("Maximum image size must be greater than 0.")
+            messagebox.showerror("Error", "Invalid input folder")
 
-    @staticmethod
-    def _load_face_detection_model(model_path):
+    def start_processing(self):
+        input_folder = self.input_folder_entry.get()
+        output_folder = self.output_folder_entry.get()
+        models = []
+        if self.mtcnn_var.get():
+            models.append('mtcnn')
+        if self.frontalface_var.get():
+            models.append('frontalface')
+        if self.profileface_var.get():
+            models.append('profileface')
+
+        if not os.path.isdir(input_folder) or not os.path.isdir(output_folder):
+            messagebox.showerror("Error", "Invalid input or output folder")
+            return
+
         try:
-            model = cv2.CascadeClassifier(model_path)
-            return model
+            self.main_program.run(models)
+            messagebox.showinfo("Success", "Processing complete")
         except Exception as e:
-            logging.error(f"Error loading face detection model: {e}")
-            raise e
+            logging.error(f"Error processing images: {e}")
+            messagebox.showerror("Error", "An error occurred during processing")
 
-    @property
-    def front_face_cascade(self):
-        return self._front_face_cascade
+    def cancel_processing(self):
+        # Implement the cancel processing functionality
+        pass
 
-    @property
-    def profile_face_cascade(self):
-        return self._profile_face_cascade
+    def zoom_in(self):
+        # Implement zoom in functionality
+        pass
 
-    @property
-    def mtcnn_detector(self):
-        return self._mtcnn_detector
+    def zoom_out(self):
+        # Implement zoom out functionality
+        pass
 
-    def choose_model(self, models, image, gray_image):
-        faces = []
-        if 'mtcnn' in models:
-            faces.extend(self.detect_faces_mtcnn(image))
-        if 'frontalface' in models:
-            faces.extend(self.filter_faces(self.detect_faces(gray_image, self.front_face_cascade), faces))
-        if 'profileface' in models:
-            faces.extend(self.filter_faces(self.detect_faces(gray_image, self.profile_face_cascade), faces))
-        return faces
+    def batch_process(self):
+        # Implement batch processing functionality
+        pass
 
-    @staticmethod
-    def filter_faces(new_faces, existing_faces):
-        filtered_faces = []
-        for face in new_faces:
-            if not any(ImageProcessor.is_same_face(face, existing_face) for existing_face in existing_faces):
-                filtered_faces.append(face)
-        return filtered_faces
+    def show_help(self):
+        help_message = (
+            "Obscurrra GUI Help\n\n"
+            "1. Select the input folder containing the images to be processed.\n"
+            "2. Select the output folder where the processed images will be saved.\n"
+            "3. Load the images from the input folder.\n"
+            "4. Select the face detection models to use.\n"
+            "5. Adjust the max image size and blur effect intensity as needed.\n"
+            "6. Click 'Start Processing' to begin face detection and blurring.\n"
+            "7. Check the log for real-time updates and progress.\n"
+            "8. Use the preview section to compare original and processed images.\n"
+            "9. Use 'Save Settings' to save your current settings.\n"
+            "10. Click 'Exit' to close the application."
+        )
+        messagebox.showinfo("Help", help_message)
 
-    @staticmethod
-    def is_same_face(face1, face2):
-        x1, y1, w1, h1 = face1
-        x2, y2, w2, h2 = face2
-        return abs(x1 - x2) < w1 / 2 and abs(y1 - y2) < h1 / 2
+    def save_log(self):
+        log_content = self.log_display.get("1.0", tk.END)
+        log_file = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
+        if log_file:
+            with open(log_file, "w") as file:
+                file.write(log_content)
 
-    @staticmethod
-    def detect_faces(gray, face_cascade):
-        try:
-            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-            return faces
-        except Exception as e:
-            logging.error(f"Error detecting faces: {e}")
-            raise e
+    def save_settings(self):
+        # Save settings to a file or config
+        pass
 
-    def detect_faces_mtcnn(self, image):
-        try:
-            results = self.mtcnn_detector.detect_faces(image)
-            faces = [(result['box'][0], result['box'][1], result['box'][2], result['box'][3]) for result in results]
-            return faces
-        except Exception as e:
-            logging.error(f"Error detecting faces with MTCNN: {e}")
-            raise e
-
-    @staticmethod
-    def read_image(image_path):
-        img = cv2.imread(image_path)
-        if img is None:
-            raise ValueError(f"Error reading image {image_path}.")
-        return img
-
-    @staticmethod
-    def get_output_path(image_path, output_folder):
-        base_name = os.path.basename(image_path)
-        name, ext = os.path.splitext(base_name)
-        return os.path.join(output_folder, f"{name}_b{ext}")
-
-    @staticmethod
-    def preprocess_image(image):
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        gray = cv2.equalizeHist(gray)
-        return gray
-    
-    @staticmethod
-    def resize_image(image, max_dimension):
-        height, width = image.shape[:2]
-        if max(height, width) > max_dimension:
-            scale = max_dimension / max(height, width)
-            new_size = (int(width * scale), int(height * scale))
-            resized_image = cv2.resize(image, new_size, interpolation=cv2.INTER_AREA)
-            return resized_image
-        return image
-
-    def process_single_image(self, image_path, output_folder, models):
-        try:
-            logging.info(f"Processing {image_path}")
-            original_img = self.read_image(image_path)
-            resized_img = self.resize_image(original_img.copy(), self.max_image_size)  # Resize the copy for face detection
-            gray = self.preprocess_image(resized_img)
-            faces = self.choose_model(models, resized_img, gray)
-
-            # Scale factor for translating face coordinates back to original image size
-            scale_factor = max(original_img.shape[:2]) / max(resized_img.shape[:2])
-
-            if faces:
-                logging.info(f"Detected {len(faces)} face(s) in {image_path}.")
-                # Scale the face coordinates back to original image size
-                faces = [(int(x*scale_factor), int(y*scale_factor), int(w*scale_factor), int(h*scale_factor)) for (x, y, w, h) in faces]
-                self.blur_faces(original_img, faces)
-            else:
-                logging.info(f"No faces detected in {image_path}.")
-            output_path = self.get_output_path(image_path, output_folder)
-            cv2.imwrite(output_path, original_img)
-            logging.info(f"Processed and saved {output_path}")
-        except Exception as e:
-            logging.error(f"Error processing {image_path}: {e}")
-            raise e
-
-    @staticmethod
-    def blur_faces(img, faces):
-        try:
-            for (x, y, w, h) in faces:
-                img[y:y+h, x:x+w] = cv2.blur(img[y:y+h, x:x+w], ImageProcessor.BLUR_EFFECT)
-            return img
-        except Exception as e:
-            logging.error(f"Error blurring faces: {e}")
-            raise e
-
-    def process_all_images(self, input_folder, output_folder, models):
-        try:
-            with ThreadPoolExecutor() as executor:
-                futures = []
-                for extension in self.IMAGE_EXTENSIONS:
-                    for filename in glob.glob(os.path.join(input_folder, extension)):
-                        futures.append(executor.submit(self.process_single_image, filename, output_folder, models))
-                for future in futures:
-                    future.result()  # To catch any exceptions from threads
-            logging.info("Face blurring complete.")
-        except Exception as e:
-            logging.error(f"Error processing all images: {e}")
-            raise e
-
-class MainProgram:
-    OUTPUT_FOLDER_NAME = 'blurred'
-
-    def __init__(self):
-        self.directory_manager = DirectoryManager()
-        self.image_processor = ImageProcessor()
-
-    def run(self, models):
-        try:
-            current_directory = self.directory_manager.get_current_directory()
-            input_folder = current_directory
-            output_folder = os.path.join(current_directory, MainProgram.OUTPUT_FOLDER_NAME)
-            self.directory_manager.create_output_directory(output_folder)
-            self.image_processor.process_all_images(input_folder, output_folder, models)
-        except Exception as e:
-            logging.error(f"Error running the program: {e}")
-            raise e
+    def exit_application(self):
+        self.destroy()
 
 if __name__ == "__main__":
-    main_program = MainProgram()
-    models_to_use = ['mtcnn', 'frontalface', 'profileface']  # Specify which models to use
-    main_program.run(models_to_use)
+    app = ObscurrraGUI()
+    app.mainloop()

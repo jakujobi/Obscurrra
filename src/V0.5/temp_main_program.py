@@ -1,3 +1,36 @@
+
+# main_program.py
+#region
+# main_program.py
+
+import logging
+import os
+# from directory_manager import DirectoryManager
+# from image_processor import ImageProcessor
+
+class MainProgram:
+    OUTPUT_FOLDER_NAME = 'blurred'
+
+    def __init__(self):
+        self.directory_manager = DirectoryManager()
+        self.image_processor = ImageProcessor()
+
+    def run(self, models):
+        try:
+            current_directory = self.directory_manager.get_current_directory()
+            input_folder = current_directory
+            output_folder = os.path.join(current_directory, MainProgram.OUTPUT_FOLDER_NAME)
+            self.directory_manager.create_output_directory(output_folder)
+            self.image_processor.process_all_images(input_folder, output_folder, models)
+        except Exception as e:
+            logging.error(f"Error running the program: {e}")
+            raise e
+#endregion
+
+#image_processor.py
+#region
+#image_processor.py
+
 import cv2
 import glob
 import os
@@ -5,6 +38,7 @@ import logging
 import time
 from mtcnn import MTCNN
 from concurrent.futures import ThreadPoolExecutor
+
 
 class Preprocessor:
     @staticmethod
@@ -189,3 +223,40 @@ class ImageProcessor:
         except Exception as e:
             logging.error(f"Error processing all images: {e}")
             raise e
+
+#endregion
+
+
+#driectory_manager.py
+#region
+# directory_manager.py
+
+import os
+import logging
+
+class DirectoryManager:
+    TEST_DIR_SUFFIX = '/test'
+
+    @staticmethod
+    def get_current_directory():
+        try:
+            current_directory = os.path.dirname(os.path.realpath(__file__))
+            logging.info(f"Getting current directory: {current_directory}")
+            return current_directory + DirectoryManager.TEST_DIR_SUFFIX
+        except Exception as e:
+            logging.error(f"Error getting current directory: {e}")
+            raise e
+
+    @staticmethod
+    def create_output_directory(output_folder):
+        try:
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder)
+                logging.info(f"Output directory created at: {output_folder}")
+        except Exception as e:
+            logging.error(f"Error creating output directory {output_folder}: {e}")
+            raise e
+#endregion
+
+
+#
