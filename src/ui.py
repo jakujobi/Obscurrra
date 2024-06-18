@@ -5,20 +5,55 @@ import logging
 from main_program import MainProgram
 from PIL import Image, ImageTk  # For handling image display and zoom
 
+class ScrollableFrame(ttk.Frame):
+    def __init__(self, container, *args, **kwargs):
+        super().__init__(container, *args, **kwargs)
+        canvas = tk.Canvas(self)
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        self.scrollable_frame = ttk.Frame(canvas)
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        self.bind_mouse_wheel(canvas)
+
+    def bind_mouse_wheel(self, canvas):
+        """Enable scrolling with the mouse wheel."""
+        def _on_mouse_wheel(event):
+            canvas.yview_scroll(-1 * int(event.delta / 120), "units")
+
+        self.bind_all("<MouseWheel>", _on_mouse_wheel)
+        self.bind_all("<Shift-MouseWheel>", _on_mouse_wheel)
+
 class ObscurrraGUI(tk.Tk):
     def __init__(self):
         super().__init__()
 
         # Set the title and size of the main window
         self.title("Obscurrra")
-        self.geometry("800x600")  # Adjust the height to fit the content better
+        self.geometry("760x800")
+        self.minsize(760, 800)  # Set minimum size for better responsiveness
 
         # Initialize the main processing program
         self.main_program = MainProgram()
         self.cancel_flag = False  # Flag to signal cancellation
         self.zoom_factor = 1.0  # Initial zoom factor
 
-        # Create the UI elements
+        # Create a scrollable frame for the content
+        self.scrollable_frame = ScrollableFrame(self)
+        self.scrollable_frame.pack(fill="both", expand=True)
+
+        # Create the UI elements within the scrollable frame
         self.create_widgets()
 
     def create_widgets(self):
@@ -27,14 +62,15 @@ class ObscurrraGUI(tk.Tk):
         self.style.theme_use('clam')
 
         # Top Section: File and Folder Selection
-        top_frame = ttk.LabelFrame(self, text="Folder Selection", padding="10")
-        top_frame.pack(padx=10, pady=5, fill="x")
+        top_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Folder Selection", padding="10")
+        top_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+        top_frame.columnconfigure(1, weight=1)
 
         # Input folder selection
         self.input_folder_label = ttk.Label(top_frame, text="Input Folder:")
         self.input_folder_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.input_folder_entry = ttk.Entry(top_frame, width=50)
-        self.input_folder_entry.grid(row=0, column=1, padx=5, pady=5)
+        self.input_folder_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         self.input_folder_button = ttk.Button(top_frame, text="Browse", command=self.browse_input_folder)
         self.input_folder_button.grid(row=0, column=2, padx=5, pady=5)
 
@@ -42,19 +78,20 @@ class ObscurrraGUI(tk.Tk):
         self.output_folder_label = ttk.Label(top_frame, text="Output Folder:")
         self.output_folder_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
         self.output_folder_entry = ttk.Entry(top_frame, width=50)
-        self.output_folder_entry.grid(row=1, column=1, padx=5, pady=5)
+        self.output_folder_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
         self.output_folder_button = ttk.Button(top_frame, text="Browse", command=self.browse_output_folder)
         self.output_folder_button.grid(row=1, column=2, padx=5, pady=5)
 
         # Middle Section: Image and Model Selection
-        middle_frame = ttk.LabelFrame(self, text="Image and Model Selection", padding="10")
-        middle_frame.pack(padx=10, pady=5, fill="x")
+        middle_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Image and Model Selection", padding="10")
+        middle_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        middle_frame.columnconfigure(1, weight=1)
 
         # List of images
         self.images_label = ttk.Label(middle_frame, text="Images:")
         self.images_label.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
         self.images_listbox = tk.Listbox(middle_frame, selectmode=tk.MULTIPLE, width=50, height=10)
-        self.images_listbox.grid(row=0, column=1, padx=5, pady=5, sticky="n")
+        self.images_listbox.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         self.load_images_button = ttk.Button(middle_frame, text="Load Images", command=self.load_images)
         self.load_images_button.grid(row=0, column=2, padx=5, pady=5, sticky="n")
 
@@ -72,14 +109,15 @@ class ObscurrraGUI(tk.Tk):
         self.profileface_checkbox.grid(row=1, column=1, padx=5, pady=5, sticky="e")
 
         # Settings Section: Preferences
-        settings_frame = ttk.LabelFrame(self, text="Preferences", padding="10")
-        settings_frame.pack(padx=10, pady=5, fill="x")
+        settings_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Preferences", padding="10")
+        settings_frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
+        settings_frame.columnconfigure(1, weight=1)
 
         # Max image size setting
         self.max_image_size_label = ttk.Label(settings_frame, text="Max Image Size:")
         self.max_image_size_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.max_image_size_entry = ttk.Entry(settings_frame, width=10)
-        self.max_image_size_entry.grid(row=0, column=1, padx=5, pady=5)
+        self.max_image_size_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
         # Blur effect intensity setting
         self.blur_intensity_label = ttk.Label(settings_frame, text="Blur Effect Intensity:")
@@ -89,8 +127,9 @@ class ObscurrraGUI(tk.Tk):
         self.blur_intensity_slider.set(1)
 
         # Bottom Section: Process Control and Log
-        bottom_frame = ttk.LabelFrame(self, text="Processing Control and Log", padding="10")
-        bottom_frame.pack(padx=10, pady=5, fill="x")
+        bottom_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Processing Control and Log", padding="10")
+        bottom_frame.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
+        bottom_frame.columnconfigure(1, weight=1)
 
         # Start and cancel processing buttons
         self.start_button = ttk.Button(bottom_frame, text="Start Processing", command=self.start_processing)
@@ -102,71 +141,71 @@ class ObscurrraGUI(tk.Tk):
         self.progress_label = ttk.Label(bottom_frame, text="Progress:")
         self.progress_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
         self.progress_bar = ttk.Progressbar(bottom_frame, length=200, mode='determinate')
-        self.progress_bar.grid(row=1, column=1, padx=5, pady=5)
+        self.progress_bar.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
 
         # Log display
         self.log_label = ttk.Label(bottom_frame, text="Log:")
         self.log_label.grid(row=2, column=0, padx=5, pady=5, sticky="nw")
         self.log_display = scrolledtext.ScrolledText(bottom_frame, width=70, height=8)
-        self.log_display.grid(row=2, column=1, padx=5, pady=5)
+        self.log_display.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
 
-        # Preview Section: Image Preview
-        preview_frame = ttk.LabelFrame(self, text="Image Preview", padding="10")
-        preview_frame.pack(padx=10, pady=5, fill="x")
+        # Image Preview Section
+        image_preview_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Image Preview", padding="10")
+        image_preview_frame.grid(row=4, column=0, padx=10, pady=5, sticky="ew")
+        image_preview_frame.columnconfigure(0, weight=1)
+        image_preview_frame.columnconfigure(1, weight=1)
 
         # Original image preview
-        self.original_image_label = ttk.Label(preview_frame, text="Original Image:")
+        self.original_image_label = ttk.Label(image_preview_frame, text="Original Image:")
         self.original_image_label.grid(row=0, column=0, padx=5, pady=5)
-        self.original_image_canvas = tk.Canvas(preview_frame, width=200, height=200)
-        self.original_image_canvas.grid(row=0, column=1, padx=5, pady=5)
+        self.original_image_canvas = tk.Canvas(image_preview_frame, width=200, height=200)
+        self.original_image_canvas.grid(row=1, column=0, padx=5, pady=5)
 
         # Processed image preview
-        self.processed_image_label = ttk.Label(preview_frame, text="Processed Image:")
-        self.processed_image_label.grid(row=1, column=0, padx=5, pady=5)
-        self.processed_image_canvas = tk.Canvas(preview_frame, width=200, height=200)
+        self.processed_image_label = ttk.Label(image_preview_frame, text="Processed Image:")
+        self.processed_image_label.grid(row=0, column=1, padx=5, pady=5)
+        self.processed_image_canvas = tk.Canvas(image_preview_frame, width=200, height=200)
         self.processed_image_canvas.grid(row=1, column=1, padx=5, pady=5)
 
         # Zoom controls
-        self.zoom_in_button = ttk.Button(preview_frame, text="Zoom In", command=self.zoom_in)
+        self.zoom_in_button = ttk.Button(image_preview_frame, text="Zoom In", command=self.zoom_in)
         self.zoom_in_button.grid(row=2, column=0, padx=5, pady=5)
-        self.zoom_out_button = ttk.Button(preview_frame, text="Zoom Out", command=self.zoom_out)
+        self.zoom_out_button = ttk.Button(image_preview_frame, text="Zoom Out", command=self.zoom_out)
         self.zoom_out_button.grid(row=2, column=1, padx=5, pady=5)
 
-        # Batch Processing Section
-        batch_frame = ttk.LabelFrame(self, text="Batch Processing", padding="10")
-        batch_frame.pack(padx=10, pady=5, fill="x")
-
-        # Batch processing controls
-        self.batch_process_button = ttk.Button(batch_frame, text="Batch Process", command=self.batch_process)
-        self.batch_process_button.grid(row=0, column=0, padx=5, pady=5)
-        self.total_images_label = ttk.Label(batch_frame, text="Total Images Processed:")
-        self.total_images_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.total_images_count = ttk.Label(batch_frame, text="0")
-        self.total_images_count.grid(row=1, column=1, padx=5, pady=5, sticky="w")
-        self.total_faces_label = ttk.Label(batch_frame, text="Total Faces Detected:")
-        self.total_faces_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
-        self.total_faces_count = ttk.Label(batch_frame, text="0")
-        self.total_faces_count.grid(row=2, column=1, padx=5, pady=5, sticky="w")
-
-        # Help and Feedback Section
-        help_frame = ttk.LabelFrame(self, text="Help and Feedback", padding="10")
-        help_frame.pack(padx=10, pady=5, fill="x")
+        # Help, Feedback, and Batch Processing Section
+        help_batch_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Help, Feedback, and Batch Processing", padding="10")
+        help_batch_frame.grid(row=5, column=0, padx=10, pady=5, sticky="ew")
+        help_batch_frame.columnconfigure(1, weight=1)
 
         # Help and save log buttons
-        self.help_button = ttk.Button(help_frame, text="Help", command=self.show_help)
+        self.help_button = ttk.Button(help_batch_frame, text="Help", command=self.show_help)
         self.help_button.grid(row=0, column=0, padx=5, pady=5)
-        self.save_log_button = ttk.Button(help_frame, text="Save Log", command=self.save_log)
+        self.save_log_button = ttk.Button(help_batch_frame, text="Save Log", command=self.save_log)
         self.save_log_button.grid(row=0, column=1, padx=5, pady=5)
 
+        # Batch processing controls
+        self.batch_process_button = ttk.Button(help_batch_frame, text="Batch Process", command=self.batch_process)
+        self.batch_process_button.grid(row=1, column=0, padx=5, pady=5)
+        self.total_images_label = ttk.Label(help_batch_frame, text="Total Images Processed:")
+        self.total_images_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.total_images_count = ttk.Label(help_batch_frame, text="0")
+        self.total_images_count.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
+        self.total_faces_label = ttk.Label(help_batch_frame, text="Total Faces Detected:")
+        self.total_faces_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        self.total_faces_count = ttk.Label(help_batch_frame, text="0")
+        self.total_faces_count.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
+
         # Exit Section
-        exit_frame = ttk.Frame(self)
-        exit_frame.pack(padx=10, pady=5, fill="x")
+        exit_frame = ttk.Frame(self.scrollable_frame.scrollable_frame)
+        exit_frame.grid(row=6, column=0, padx=10, pady=5, sticky="ew")
+        exit_frame.columnconfigure(1, weight=1)
 
         # Save settings and exit buttons
         self.save_settings_button = ttk.Button(exit_frame, text="Save Settings", command=self.save_settings)
-        self.save_settings_button.grid(row=0, column=0, padx=5, pady=5)
+        self.save_settings_button.grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.exit_button = ttk.Button(exit_frame, text="Exit", command=self.exit_application)
-        self.exit_button.grid(row=0, column=1, padx=5, pady=5)
+        self.exit_button.grid(row=0, column=1, padx=5, pady=5, sticky="e")
 
     def browse_input_folder(self):
         """Open a dialog to select the input folder."""
