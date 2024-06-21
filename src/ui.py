@@ -3,7 +3,10 @@ from tkinter import filedialog, messagebox, ttk, scrolledtext
 import os
 import logging
 from main_program import MainProgram
+from main_program import ImageProcessor  # Import ImageProcessor directly
 from PIL import Image, ImageTk  # For handling image display and zoom
+import threading
+import sys
 
 class ScrollableFrame(ttk.Frame):
     def __init__(self, container, *args, **kwargs):
@@ -44,8 +47,9 @@ class ObscurrraGUI(tk.Tk):
         self.geometry("760x960")
         self.minsize(760, 960)  # Set minimum size for better responsiveness
 
-        # Initialize the main processing program
+        # Initialize the main processing program and ImageProcessor
         self.main_program = MainProgram()
+        self.image_processor = ImageProcessor()  # Initialize ImageProcessor
         self.cancel_flag = False  # Flag to signal cancellation
         self.zoom_factor = 1.0  # Initial zoom factor
 
@@ -55,6 +59,10 @@ class ObscurrraGUI(tk.Tk):
 
         # Create the UI elements within the scrollable frame
         self.create_widgets()
+
+        # Set default values
+        self.max_image_size_entry.insert(0, "500")
+        self.blur_intensity_slider.set(50)
 
     def create_widgets(self):
         # Apply ttk theme for modern look
@@ -108,7 +116,6 @@ class ObscurrraGUI(tk.Tk):
         self.profileface_checkbox = ttk.Checkbutton(middle_frame, text="Profile Face", variable=self.profileface_var)
         self.profileface_checkbox.grid(row=1, column=1, padx=5, pady=5, sticky="e")
 
-
         # Settings Section: Preferences
         settings_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Preferences", padding="10")
         settings_frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
@@ -150,7 +157,6 @@ class ObscurrraGUI(tk.Tk):
         self.log_label.grid(row=2, column=0, padx=5, pady=5, sticky="nw")
         self.log_display = scrolledtext.ScrolledText(bottom_frame, width=70, height=8)
         self.log_display.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
-
 
         # Image Preview Section
         image_preview_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Image Preview", padding="10")
@@ -210,6 +216,16 @@ class ObscurrraGUI(tk.Tk):
         self.exit_button = ttk.Button(exit_frame, text="Exit", command=self.exit_application)
         self.exit_button.grid(row=0, column=1, padx=5, pady=5, sticky="e")
 
+        # Redirect log output to the log_display widget
+        self.redirect_logging()
+
+    def redirect_logging(self):
+        """Redirect logging to the log display widget."""
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        log_handler = LogHandler(self.log_display)
+        logging.getLogger().addHandler(log_handler)
+        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))  # Also log to stdout
+
     def update_blur_intensity_label(self, value):
         """Update the label showing the current blur intensity value."""
         self.blur_intensity_value_label.config(text=str(int(float(value))))
@@ -239,7 +255,6 @@ class ObscurrraGUI(tk.Tk):
         else:
             messagebox.showerror("Error", "Invalid input folder")
 
-
     def start_processing(self):
         """Start the face detection and blurring process using the selected models."""
         input_folder = self.input_folder_entry.get()
@@ -256,35 +271,51 @@ class ObscurrraGUI(tk.Tk):
             messagebox.showerror("Error", "Invalid input or output folder")
             return
 
-        # Reset cancel flag
+        # Reset cancel flag and log display
         self.cancel_flag = False
-        self.log_display.delete('1.0', tk.END)  # Clear log display
+        self.log_display.delete('1.0', tk.END)
+
+        # Run processing in a separate thread to keep the GUI responsive
+        threading.Thread(target=self.process_images, args=(input_folder, output_folder, models)).start()
+
+    def process_images(self, input_folder, output_folder, models):
+        """Process images and update the log and progress bar."""
+        total_images = 0
+        total_faces = 0
 
         try:
-            self.main_program.run(models)
+            self.log_display.insert(tk.END, "Starting processing...\n")
+            self.progress_bar['value'] = 0
+
+            image_files = [f for f in os.listdir(input_folder) if f.lower().endswith(('jpg', 'jpeg', 'png', 'webp'))]
+            self.progress_bar['maximum'] = len(image_files)
+
+            for image_file in image_files:
+                if self.cancel_flag:
+                    break
+
+                input_path = os.path.join(input_folder, image_file)
+                result = self.image_processor.process_single_image(input_path, output_folder, models)
+                total_images += 1
+                total_faces += result['faces']
+                self.progress_bar['value'] = total_images
+                self.log_display.insert(tk.END, f"Processed {image_file}, found {result['faces']} faces.\n")
+                self.log_display.yview(tk.END)
+
             if not self.cancel_flag:
-                self.log_display.insert(tk.END, "Processing complete\n")
+                self.log_display.insert(tk.END, "Processing complete.\n")
                 messagebox.showinfo("Success", "Processing complete")
             else:
-                self.log_display.insert(tk.END, "Processing cancelled\n")
+                self.log_display.insert(tk.END, "Processing cancelled.\n")
                 messagebox.showinfo("Cancelled", "Processing cancelled")
         except Exception as e:
             logging.error(f"Error processing images: {e}")
             self.log_display.insert(tk.END, f"Error: {e}\n")
             messagebox.showerror("Error", "An error occurred during processing")
 
-        # Reset cancel flag
-        self.cancel_flag = False
-
-        try:
-            self.main_program.run(models)
-            if not self.cancel_flag:
-                messagebox.showinfo("Success", "Processing complete")
-            else:
-                messagebox.showinfo("Cancelled", "Processing cancelled")
-        except Exception as e:
-            logging.error(f"Error processing images: {e}")
-            messagebox.showerror("Error", "An error occurred during processing")
+        # Update total images and faces processed
+        self.total_images_count.config(text=str(total_images))
+        self.total_faces_count.config(text=str(total_faces))
 
     def cancel_processing(self):
         """Set the cancel flag to True to stop the processing."""
@@ -326,18 +357,45 @@ class ObscurrraGUI(tk.Tk):
         # Reset cancel flag
         self.cancel_flag = False
 
+        # Run batch processing in a separate thread to keep the GUI responsive
+        threading.Thread(target=self.process_batch_images, args=(input_folder, output_folder, models, selected_images)).start()
+
+    def process_batch_images(self, input_folder, output_folder, models, selected_images):
+        """Process batch images and update the log and progress bar."""
+        total_images = 0
+        total_faces = 0
+
         try:
-            for image in selected_images:
-                self.main_program.run(models)
+            self.log_display.insert(tk.END, "Starting batch processing...\n")
+            self.progress_bar['value'] = 0
+            self.progress_bar['maximum'] = len(selected_images)
+
+            for image_file in selected_images:
                 if self.cancel_flag:
                     break
+
+                input_path = os.path.join(input_folder, image_file)
+                result = self.image_processor.process_single_image(input_path, output_folder, models)
+                total_images += 1
+                total_faces += result['faces']
+                self.progress_bar['value'] = total_images
+                self.log_display.insert(tk.END, f"Processed {image_file}, found {result['faces']} faces.\n")
+                self.log_display.yview(tk.END)
+
             if not self.cancel_flag:
+                self.log_display.insert(tk.END, "Batch processing complete.\n")
                 messagebox.showinfo("Success", "Batch processing complete")
             else:
+                self.log_display.insert(tk.END, "Batch processing cancelled.\n")
                 messagebox.showinfo("Cancelled", "Batch processing cancelled")
         except Exception as e:
             logging.error(f"Error during batch processing: {e}")
+            self.log_display.insert(tk.END, f"Error: {e}\n")
             messagebox.showerror("Error", "An error occurred during batch processing")
+
+        # Update total images and faces processed
+        self.total_images_count.config(text=str(total_images))
+        self.total_faces_count.config(text=str(total_faces))
 
     def update_image_preview(self):
         """Update the image preview based on the zoom factor."""
@@ -376,6 +434,16 @@ class ObscurrraGUI(tk.Tk):
     def exit_application(self):
         """Exit the application."""
         self.destroy()
+
+class LogHandler(logging.Handler):
+    def __init__(self, log_display):
+        super().__init__()
+        self.log_display = log_display
+
+    def emit(self, record):
+        log_entry = self.format(record)
+        self.log_display.insert(tk.END, log_entry + "\n")
+        self.log_display.yview(tk.END)
 
 if __name__ == "__main__":
     app = ObscurrraGUI()
