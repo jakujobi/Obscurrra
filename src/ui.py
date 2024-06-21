@@ -41,8 +41,8 @@ class ObscurrraGUI(tk.Tk):
 
         # Set the title and size of the main window
         self.title("Obscurrra")
-        self.geometry("760x800")
-        self.minsize(760, 800)  # Set minimum size for better responsiveness
+        self.geometry("760x960")
+        self.minsize(760, 960)  # Set minimum size for better responsiveness
 
         # Initialize the main processing program
         self.main_program = MainProgram()
