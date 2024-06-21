@@ -108,23 +108,25 @@ class ObscurrraGUI(tk.Tk):
         self.profileface_checkbox = ttk.Checkbutton(middle_frame, text="Profile Face", variable=self.profileface_var)
         self.profileface_checkbox.grid(row=1, column=1, padx=5, pady=5, sticky="e")
 
+
         # Settings Section: Preferences
         settings_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Preferences", padding="10")
         settings_frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
         settings_frame.columnconfigure(1, weight=1)
 
         # Max image size setting
-        self.max_image_size_label = ttk.Label(settings_frame, text="Max Image Size:")
+        self.max_image_size_label = ttk.Label(settings_frame, text="Max Image Size (px):")
         self.max_image_size_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.max_image_size_entry = ttk.Entry(settings_frame, width=10)
         self.max_image_size_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
-        # Blur effect intensity setting
+        # Blur effect intensity setting with digital representation
         self.blur_intensity_label = ttk.Label(settings_frame, text="Blur Effect Intensity:")
         self.blur_intensity_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.blur_intensity_slider = ttk.Scale(settings_frame, from_=1, to=100, orient=tk.HORIZONTAL)
+        self.blur_intensity_slider = ttk.Scale(settings_frame, from_=1, to=100, orient=tk.HORIZONTAL, command=self.update_blur_intensity_label)
         self.blur_intensity_slider.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
-        self.blur_intensity_slider.set(1)
+        self.blur_intensity_value_label = ttk.Label(settings_frame, text="50")  # Default value
+        self.blur_intensity_value_label.grid(row=1, column=2, padx=5, pady=5, sticky="w")
 
         # Bottom Section: Process Control and Log
         bottom_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Processing Control and Log", padding="10")
@@ -148,6 +150,7 @@ class ObscurrraGUI(tk.Tk):
         self.log_label.grid(row=2, column=0, padx=5, pady=5, sticky="nw")
         self.log_display = scrolledtext.ScrolledText(bottom_frame, width=70, height=8)
         self.log_display.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
+
 
         # Image Preview Section
         image_preview_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Image Preview", padding="10")
@@ -207,6 +210,10 @@ class ObscurrraGUI(tk.Tk):
         self.exit_button = ttk.Button(exit_frame, text="Exit", command=self.exit_application)
         self.exit_button.grid(row=0, column=1, padx=5, pady=5, sticky="e")
 
+    def update_blur_intensity_label(self, value):
+        """Update the label showing the current blur intensity value."""
+        self.blur_intensity_value_label.config(text=str(int(float(value))))
+
     def browse_input_folder(self):
         """Open a dialog to select the input folder."""
         folder_selected = filedialog.askdirectory()
@@ -232,6 +239,7 @@ class ObscurrraGUI(tk.Tk):
         else:
             messagebox.showerror("Error", "Invalid input folder")
 
+
     def start_processing(self):
         """Start the face detection and blurring process using the selected models."""
         input_folder = self.input_folder_entry.get()
@@ -247,6 +255,23 @@ class ObscurrraGUI(tk.Tk):
         if not os.path.isdir(input_folder) or not os.path.isdir(output_folder):
             messagebox.showerror("Error", "Invalid input or output folder")
             return
+
+        # Reset cancel flag
+        self.cancel_flag = False
+        self.log_display.delete('1.0', tk.END)  # Clear log display
+
+        try:
+            self.main_program.run(models)
+            if not self.cancel_flag:
+                self.log_display.insert(tk.END, "Processing complete\n")
+                messagebox.showinfo("Success", "Processing complete")
+            else:
+                self.log_display.insert(tk.END, "Processing cancelled\n")
+                messagebox.showinfo("Cancelled", "Processing cancelled")
+        except Exception as e:
+            logging.error(f"Error processing images: {e}")
+            self.log_display.insert(tk.END, f"Error: {e}\n")
+            messagebox.showerror("Error", "An error occurred during processing")
 
         # Reset cancel flag
         self.cancel_flag = False
