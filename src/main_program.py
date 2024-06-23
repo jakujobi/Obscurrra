@@ -1,4 +1,4 @@
-# obscurrra-v0.5.py
+# main_program.py
 
 """
 Obscurrra v0.5

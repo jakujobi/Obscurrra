@@ -115,6 +115,15 @@ class ObscurrraGUI(tk.Tk):
         self.profileface_var = tk.BooleanVar()
         self.profileface_checkbox = ttk.Checkbutton(middle_frame, text="Profile Face", variable=self.profileface_var)
         self.profileface_checkbox.grid(row=1, column=1, padx=5, pady=5, sticky="e")
+        self.dlib_var = tk.BooleanVar()
+        self.dlib_checkbox = ttk.Checkbutton(middle_frame, text="Dlib", variable=self.dlib_var)
+        self.dlib_checkbox.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+        self.facenet_var = tk.BooleanVar()
+        self.facenet_checkbox = ttk.Checkbutton(middle_frame, text="FaceNet", variable=self.facenet_var)
+        self.facenet_checkbox.grid(row=2, column=1, padx=5, pady=5)
+        self.retinaface_var = tk.BooleanVar()
+        self.retinaface_checkbox = ttk.Checkbutton(middle_frame, text="RetinaFace", variable=self.retinaface_var)
+        self.retinaface_checkbox.grid(row=2, column=1, padx=5, pady=5, sticky="e")
 
         # Settings Section: Preferences
         settings_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Preferences", padding="10")
@@ -266,6 +275,12 @@ class ObscurrraGUI(tk.Tk):
             models.append('frontalface')
         if self.profileface_var.get():
             models.append('profileface')
+        if self.dlib_var.get():
+            models.append('dlib')
+        if self.facenet_var.get():
+            models.append('facenet')
+        if self.retinaface_var.get():
+            models.append('retinaface')
 
         if not os.path.isdir(input_folder) or not os.path.isdir(output_folder):
             messagebox.showerror("Error", "Invalid input or output folder")
@@ -343,6 +358,12 @@ class ObscurrraGUI(tk.Tk):
             models.append('frontalface')
         if self.profileface_var.get():
             models.append('profileface')
+        if self.dlib_var.get():
+            models.append('dlib')
+        if self.facenet_var.get():
+            models.append('facenet')
+        if self.retinaface_var.get():
+            models.append('retinaface')
 
         if not os.path.isdir(input_folder) or not os.path.isdir(output_folder):
             messagebox.showerror("Error", "Invalid input or output folder")
