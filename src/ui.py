@@ -1,5 +1,3 @@
-# ui.py
-
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk, scrolledtext
 import os
@@ -54,6 +52,7 @@ class ObscurrraGUI(tk.Tk):
         self.image_processor = ImageProcessor()  # Initialize ImageProcessor
         self.cancel_flag = False  # Flag to signal cancellation
         self.zoom_factor = 1.0  # Initial zoom factor
+        self.selected_files = []  # To store selected individual image files
 
         # Create a scrollable frame for the content
         self.scrollable_frame = ScrollableFrame(self)
@@ -92,6 +91,10 @@ class ObscurrraGUI(tk.Tk):
         self.output_folder_button = ttk.Button(top_frame, text="Browse", command=self.browse_output_folder)
         self.output_folder_button.grid(row=1, column=2, padx=5, pady=5)
 
+        # Select individual images
+        self.select_images_button = ttk.Button(top_frame, text="Select Images", command=self.browse_images)
+        self.select_images_button.grid(row=2, column=0, columnspan=3, padx=5, pady=5)
+
         # Middle Section: Image and Model Selection
         middle_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Image and Model Selection", padding="10")
         middle_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
@@ -117,6 +120,15 @@ class ObscurrraGUI(tk.Tk):
         self.profileface_var = tk.BooleanVar()
         self.profileface_checkbox = ttk.Checkbutton(middle_frame, text="Profile Face", variable=self.profileface_var)
         self.profileface_checkbox.grid(row=1, column=1, padx=5, pady=5, sticky="e")
+        self.dlib_var = tk.BooleanVar()
+        self.dlib_checkbox = ttk.Checkbutton(middle_frame, text="Dlib", variable=self.dlib_var)
+        self.dlib_checkbox.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+        self.facenet_var = tk.BooleanVar()
+        self.facenet_checkbox = ttk.Checkbutton(middle_frame, text="FaceNet", variable=self.facenet_var)
+        self.facenet_checkbox.grid(row=2, column=1, padx=5, pady=5)
+        self.retinaface_var = tk.BooleanVar()
+        self.retinaface_checkbox = ttk.Checkbutton(middle_frame, text="RetinaFace", variable=self.retinaface_var)
+        self.retinaface_checkbox.grid(row=2, column=1, padx=5, pady=5, sticky="e")
 
         # Settings Section: Preferences
         settings_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Preferences", padding="10")
@@ -238,6 +250,7 @@ class ObscurrraGUI(tk.Tk):
         if folder_selected:
             self.input_folder_entry.delete(0, tk.END)
             self.input_folder_entry.insert(0, folder_selected)
+            self.selected_files = []  # Clear selected files
 
     def browse_output_folder(self):
         """Open a dialog to select the output folder."""
@@ -246,16 +259,28 @@ class ObscurrraGUI(tk.Tk):
             self.output_folder_entry.delete(0, tk.END)
             self.output_folder_entry.insert(0, folder_selected)
 
+    def browse_images(self):
+        """Open a dialog to select multiple image files."""
+        filetypes = [("Image files", "*.jpg *.jpeg *.png *.webp")]
+        files_selected = filedialog.askopenfilenames(filetypes=filetypes)
+        if files_selected:
+            self.selected_files = list(files_selected)
+            self.input_folder_entry.delete(0, tk.END)  # Clear input folder entry
+
     def load_images(self):
-        """Load images from the selected input folder and display them in the listbox."""
-        input_folder = self.input_folder_entry.get()
-        if os.path.isdir(input_folder):
-            self.images_listbox.delete(0, tk.END)
-            for image in os.listdir(input_folder):
-                if image.lower().endswith(('jpg', 'jpeg', 'png', 'webp')):
-                    self.images_listbox.insert(tk.END, image)
+        """Load images from the selected input folder or individual files and display them in the listbox."""
+        self.images_listbox.delete(0, tk.END)
+        if self.selected_files:
+            for image in self.selected_files:
+                self.images_listbox.insert(tk.END, os.path.basename(image))
         else:
-            messagebox.showerror("Error", "Invalid input folder")
+            input_folder = self.input_folder_entry.get()
+            if os.path.isdir(input_folder):
+                for image in os.listdir(input_folder):
+                    if image.lower().endswith(('jpg', 'jpeg', 'png', 'webp')):
+                        self.images_listbox.insert(tk.END, image)
+            else:
+                messagebox.showerror("Error", "Invalid input folder")
 
     def start_processing(self):
         """Start the face detection and blurring process using the selected models."""
@@ -268,10 +293,23 @@ class ObscurrraGUI(tk.Tk):
             models.append('frontalface')
         if self.profileface_var.get():
             models.append('profileface')
+        if self.dlib_var.get():
+            models.append('dlib')
+        if self.facenet_var.get():
+            models.append('facenet')
+        if self.retinaface_var.get():
+            models.append('retinaface')
 
-        if not os.path.isdir(input_folder) or not os.path.isdir(output_folder):
-            messagebox.showerror("Error", "Invalid input or output folder")
+        if not os.path.isdir(input_folder) and not self.selected_files:
+            messagebox.showerror("Error", "Invalid input folder or no images selected")
             return
+
+        if not os.path.isdir(output_folder):
+            output_folder = os.path.join(input_folder, "Obscurred")
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder)
+            self.output_folder_entry.delete(0, tk.END)
+            self.output_folder_entry.insert(0, output_folder)
 
         # Reset cancel flag and log display
         self.cancel_flag = False
@@ -284,24 +322,22 @@ class ObscurrraGUI(tk.Tk):
         """Process images and update the log and progress bar."""
         total_images = 0
         total_faces = 0
+        image_files = self.selected_files if self.selected_files else [os.path.join(input_folder, f) for f in os.listdir(input_folder) if f.lower().endswith(('jpg', 'jpeg', 'png', 'webp'))]
 
         try:
             self.log_display.insert(tk.END, "Starting processing...\n")
             self.progress_bar['value'] = 0
-
-            image_files = [f for f in os.listdir(input_folder) if f.lower().endswith(('jpg', 'jpeg', 'png', 'webp'))]
             self.progress_bar['maximum'] = len(image_files)
 
             for image_file in image_files:
                 if self.cancel_flag:
                     break
 
-                input_path = os.path.join(input_folder, image_file)
-                result = self.image_processor.process_single_image(input_path, output_folder, models)
+                result = self.image_processor.process_single_image(image_file, output_folder, models)
                 total_images += 1
                 total_faces += result['faces']
                 self.progress_bar['value'] = total_images
-                self.log_display.insert(tk.END, f"Processed {image_file}, found {result['faces']} faces.\n")
+                self.log_display.insert(tk.END, f"Processed {os.path.basename(image_file)}, found {result['faces']} faces.\n")
                 self.log_display.yview(tk.END)
 
             if not self.cancel_flag:
@@ -345,10 +381,23 @@ class ObscurrraGUI(tk.Tk):
             models.append('frontalface')
         if self.profileface_var.get():
             models.append('profileface')
+        if self.dlib_var.get():
+            models.append('dlib')
+        if self.facenet_var.get():
+            models.append('facenet')
+        if self.retinaface_var.get():
+            models.append('retinaface')
 
-        if not os.path.isdir(input_folder) or not os.path.isdir(output_folder):
-            messagebox.showerror("Error", "Invalid input or output folder")
+        if not os.path.isdir(input_folder) and not self.selected_files:
+            messagebox.showerror("Error", "Invalid input folder or no images selected")
             return
+
+        if not os.path.isdir(output_folder):
+            output_folder = os.path.join(input_folder, "Obscurred")
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder)
+            self.output_folder_entry.delete(0, tk.END)
+            self.output_folder_entry.insert(0, output_folder)
 
         # Get selected images
         selected_images = [self.images_listbox.get(idx) for idx in self.images_listbox.curselection()]
@@ -360,28 +409,28 @@ class ObscurrraGUI(tk.Tk):
         self.cancel_flag = False
 
         # Run batch processing in a separate thread to keep the GUI responsive
-        threading.Thread(target=self.process_batch_images, args=(input_folder, output_folder, models, selected_images)).start()
+        threading.Thread(target=self.process_batch_images, args=(output_folder, models, selected_images)).start()
 
-    def process_batch_images(self, input_folder, output_folder, models, selected_images):
+    def process_batch_images(self, output_folder, models, selected_images):
         """Process batch images and update the log and progress bar."""
         total_images = 0
         total_faces = 0
+        image_files = [os.path.join(self.input_folder_entry.get(), image) for image in selected_images]
 
         try:
             self.log_display.insert(tk.END, "Starting batch processing...\n")
             self.progress_bar['value'] = 0
-            self.progress_bar['maximum'] = len(selected_images)
+            self.progress_bar['maximum'] = len(image_files)
 
-            for image_file in selected_images:
+            for image_file in image_files:
                 if self.cancel_flag:
                     break
 
-                input_path = os.path.join(input_folder, image_file)
-                result = self.image_processor.process_single_image(input_path, output_folder, models)
+                result = self.image_processor.process_single_image(image_file, output_folder, models)
                 total_images += 1
                 total_faces += result['faces']
                 self.progress_bar['value'] = total_images
-                self.log_display.insert(tk.END, f"Processed {image_file}, found {result['faces']} faces.\n")
+                self.log_display.insert(tk.END, f"Processed {os.path.basename(image_file)}, found {result['faces']} faces.\n")
                 self.log_display.yview(tk.END)
 
             if not self.cancel_flag:
