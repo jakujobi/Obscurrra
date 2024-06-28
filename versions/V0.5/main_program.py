@@ -305,7 +305,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 if __name__ == "__main__":
     try:
-        from ui import ObscurrraGUI
+        from Obscurrra import ObscurrraGUI
         app = ObscurrraGUI()
         app.mainloop()
     except ImportError as e:
