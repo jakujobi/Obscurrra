@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk, scrolledtext
+from ttkthemes import ThemedTk
+
 import os
 import logging
 from PIL import Image, ImageTk
@@ -59,31 +61,48 @@ class ObscurrraGUI(tk.Tk):
         self.scrollable_frame = ScrollableFrame(self)
         self.scrollable_frame.pack(fill="both", expand=True)
 
+        self.available_themes = ['clam', 'alt', 'default', 'classic', 'vista', 'xpnative', 'winnative', 'aquativo', 'arc', 'plastik', 'clearlooks', 'smog', 'radiance', 'keramik', 'blue', 'black', 'elegance', 'itft1', 'winxpblue', 'scidblue', 'scidgreen', 'scidmint', 'scidpink', 'scidpurple', 'scidsand', 'scidturquoise', 'scidviolet', 'scidgrey', 'scidlightblue', 'scidlightgreen', 'scidlightturquoise', 'scidlightviolet', 'scidbeige', 'scidbrown', 'scidgray', 'scidolive', 'scidorange', 'scidred', 'scidtan', 'scidtaup']
+        self.selected_theme = tk.StringVar(value="vista")  # Changed default theme to 'vista'
         self.create_widgets()
 
         self.max_image_size_entry.insert(0, "500")
         self.blur_intensity_slider.set(50)
         self.mtcnn_var.set(True)
 
+    def create_label_entry_pair(self, parent, label_text, row, column, entry_width=50):
+        label = ttk.Label(parent, text=label_text)
+        label.grid(row=row, column=column, padx=5, pady=5, sticky="w")
+        entry = ttk.Entry(parent, width=entry_width)
+        entry.grid(row=row, column=column+1, padx=5, pady=5, sticky="ew")
+        return label, entry
+
+    def create_checkbox(self, parent, text, variable, row, column, sticky="w"):
+        checkbox = ttk.Checkbutton(parent, text=text, variable=variable)
+        checkbox.grid(row=row, column=column, padx=5, pady=5, sticky=sticky)
+        return checkbox
+
     def create_widgets(self):
         self.style = ttk.Style(self)
-        self.style.theme_use('clam')
+        self.style.theme_use(self.selected_theme.get())
+
+        # Theme selection dropdown
+        theme_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Theme Selection", padding="10")
+        theme_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+        self.theme_label = ttk.Label(theme_frame, text="Select Theme:")
+        self.theme_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.theme_dropdown = ttk.Combobox(theme_frame, textvariable=self.selected_theme, values=self.available_themes)
+        self.theme_dropdown.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        self.theme_dropdown.bind("<<ComboboxSelected>>", self.change_theme)
 
         top_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Folder Selection", padding="10")
-        top_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+        top_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
         top_frame.columnconfigure(1, weight=1)
 
-        self.input_folder_label = ttk.Label(top_frame, text="Input Folder:")
-        self.input_folder_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        self.input_folder_entry = ttk.Entry(top_frame, width=50)
-        self.input_folder_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        self.input_folder_label, self.input_folder_entry = self.create_label_entry_pair(top_frame, "Input Folder:", 0, 0)
         self.input_folder_button = ttk.Button(top_frame, text="Browse", command=self.browse_input_folder)
         self.input_folder_button.grid(row=0, column=2, padx=5, pady=5)
 
-        self.output_folder_label = ttk.Label(top_frame, text="Output Folder:")
-        self.output_folder_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.output_folder_entry = ttk.Entry(top_frame, width=50)
-        self.output_folder_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+        self.output_folder_label, self.output_folder_entry = self.create_label_entry_pair(top_frame, "Output Folder:", 1, 0)
         self.output_folder_button = ttk.Button(top_frame, text="Browse", command=self.browse_output_folder)
         self.output_folder_button.grid(row=1, column=2, padx=5, pady=5)
 
@@ -91,7 +110,7 @@ class ObscurrraGUI(tk.Tk):
         self.select_images_button.grid(row=2, column=0, columnspan=3, padx=5, pady=5)
 
         middle_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Image and Model Selection", padding="10")
-        middle_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        middle_frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
         middle_frame.columnconfigure(1, weight=1)
 
         self.images_label = ttk.Label(middle_frame, text="Images:")
@@ -102,33 +121,23 @@ class ObscurrraGUI(tk.Tk):
         self.models_label = ttk.Label(middle_frame, text="Face Detection Models:")
         self.models_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
         self.mtcnn_var = tk.BooleanVar()
-        self.mtcnn_checkbox = ttk.Checkbutton(middle_frame, text="MTCNN", variable=self.mtcnn_var)
-        self.mtcnn_checkbox.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        self.mtcnn_checkbox = self.create_checkbox(middle_frame, "MTCNN", self.mtcnn_var, 1, 1, "w")
         self.frontalface_var = tk.BooleanVar()
-        self.frontalface_checkbox = ttk.Checkbutton(middle_frame, text="Frontal Face", variable=self.frontalface_var)
-        self.frontalface_checkbox.grid(row=1, column=1, padx=5, pady=5)
+        self.frontalface_checkbox = self.create_checkbox(middle_frame, "Frontal Face", self.frontalface_var, 1, 2, "w")
         self.profileface_var = tk.BooleanVar()
-        self.profileface_checkbox = ttk.Checkbutton(middle_frame, text="Profile Face", variable=self.profileface_var)
-        self.profileface_checkbox.grid(row=1, column=1, padx=5, pady=5, sticky="e")
+        self.profileface_checkbox = self.create_checkbox(middle_frame, "Profile Face", self.profileface_var, 1, 3, "w")
         self.dlib_var = tk.BooleanVar()
-        self.dlib_checkbox = ttk.Checkbutton(middle_frame, text="Dlib", variable=self.dlib_var)
-        self.dlib_checkbox.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+        self.dlib_checkbox = self.create_checkbox(middle_frame, "Dlib", self.dlib_var, 2, 1, "w")
         self.facenet_var = tk.BooleanVar()
-        self.facenet_checkbox = ttk.Checkbutton(middle_frame, text="FaceNet", variable=self.facenet_var)
-        self.facenet_checkbox.grid(row=2, column=1, padx=5, pady=5)
+        self.facenet_checkbox = self.create_checkbox(middle_frame, "FaceNet", self.facenet_var, 2, 2, "w")
         self.retinaface_var = tk.BooleanVar()
-        self.retinaface_checkbox = ttk.Checkbutton(middle_frame, text="RetinaFace", variable=self.retinaface_var)
-        self.retinaface_checkbox.grid(row=2, column=1, padx=5, pady=5, sticky="e")
+        self.retinaface_checkbox = self.create_checkbox(middle_frame, "RetinaFace", self.retinaface_var, 2, 3, "w")
 
         settings_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Preferences", padding="10")
-        settings_frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
+        settings_frame.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
         settings_frame.columnconfigure(1, weight=1)
 
-        self.max_image_size_label = ttk.Label(settings_frame, text="Max Image Size (px):")
-        self.max_image_size_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        self.max_image_size_entry = ttk.Entry(settings_frame, width=10)
-        self.max_image_size_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-
+        self.max_image_size_label, self.max_image_size_entry = self.create_label_entry_pair(settings_frame, "Max Image Size (px):", 0, 0, 10)
         self.blur_intensity_label = ttk.Label(settings_frame, text="Blur Effect Intensity:")
         self.blur_intensity_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
         self.blur_intensity_slider = ttk.Scale(settings_frame, from_=1, to=100, orient=tk.HORIZONTAL, command=self.update_blur_intensity_label)
@@ -137,7 +146,7 @@ class ObscurrraGUI(tk.Tk):
         self.blur_intensity_value_label.grid(row=1, column=2, padx=5, pady=5, sticky="w")
 
         bottom_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Processing Control and Log", padding="10")
-        bottom_frame.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
+        bottom_frame.grid(row=4, column=0, padx=10, pady=5, sticky="ew")
         bottom_frame.columnconfigure(1, weight=1)
 
         self.start_button = ttk.Button(bottom_frame, text="Start Processing", command=self.start_processing)
@@ -156,7 +165,7 @@ class ObscurrraGUI(tk.Tk):
         self.log_display.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
 
         image_preview_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Image Preview", padding="10")
-        image_preview_frame.grid(row=4, column=0, padx=10, pady=5, sticky="ew")
+        image_preview_frame.grid(row=5, column=0, padx=10, pady=5, sticky="ew")
         image_preview_frame.columnconfigure(0, weight=1)
         image_preview_frame.columnconfigure(1, weight=1)
 
@@ -176,27 +185,27 @@ class ObscurrraGUI(tk.Tk):
         self.zoom_out_button.grid(row=2, column=1, padx=5, pady=5)
 
         help_batch_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Help, Feedback, and Batch Processing", padding="10")
-        help_batch_frame.grid(row=5, column=0, padx=10, pady=5, sticky="ew")
+        help_batch_frame.grid(row=6, column=0, padx=10, pady=5, sticky="ew")
         help_batch_frame.columnconfigure(1, weight=1)
 
         self.help_button = ttk.Button(help_batch_frame, text="Help", command=self.show_help)
         self.help_button.grid(row=0, column=0, padx=5, pady=5)
         self.save_log_button = ttk.Button(help_batch_frame, text="Save Log", command=self.save_log)
         self.save_log_button.grid(row=0, column=1, padx=5, pady=5)
-
         self.batch_process_button = ttk.Button(help_batch_frame, text="Batch Process", command=self.batch_process)
-        self.batch_process_button.grid(row=1, column=0, padx=5, pady=5)
+        self.batch_process_button.grid(row=0, column=2, padx=5, pady=5)
+
         self.total_images_label = ttk.Label(help_batch_frame, text="Total Images Processed:")
-        self.total_images_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.total_images_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
         self.total_images_count = ttk.Label(help_batch_frame, text="0")
-        self.total_images_count.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
+        self.total_images_count.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
         self.total_faces_label = ttk.Label(help_batch_frame, text="Total Faces Detected:")
-        self.total_faces_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        self.total_faces_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
         self.total_faces_count = ttk.Label(help_batch_frame, text="0")
-        self.total_faces_count.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
+        self.total_faces_count.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
 
         exit_frame = ttk.Frame(self.scrollable_frame.scrollable_frame)
-        exit_frame.grid(row=6, column=0, padx=10, pady=5, sticky="ew")
+        exit_frame.grid(row=7, column=0, padx=10, pady=5, sticky="ew")
         exit_frame.columnconfigure(1, weight=1)
 
         self.save_settings_button = ttk.Button(exit_frame, text="Save Settings", command=self.save_settings)
@@ -205,6 +214,16 @@ class ObscurrraGUI(tk.Tk):
         self.exit_button.grid(row=0, column=1, padx=5, pady=5, sticky="e")
 
         self.redirect_logging()
+
+    def change_theme(self, event=None):
+        available_themes = self.style.theme_names()
+        selected_theme = self.selected_theme.get()
+        if selected_theme in available_themes:
+            self.style.theme_use(selected_theme)
+        else:
+            print(f"Theme {selected_theme} is not available. Skipping...")
+            # Optionally, set a default theme here
+            self.style.theme_use('vista')
 
     def redirect_logging(self):
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -287,6 +306,7 @@ class ObscurrraGUI(tk.Tk):
     def process_images(self, input_folder, output_folder, models):
         total_images = 0
         total_faces = 0
+        no_faces = 0
         image_files = self.selected_files if self.selected_files else [os.path.join(input_folder, f) for f in os.listdir(input_folder) if f.lower().endswith(('jpg', 'jpeg', 'png', 'webp'))]
 
         blur_intensity = int(self.blur_intensity_value_label.cget("text"))
@@ -304,13 +324,15 @@ class ObscurrraGUI(tk.Tk):
                 result = self.image_processor.process_single_image(image_file, output_folder, models, blur_effect)
                 total_images += 1
                 total_faces += result['faces']
+                if result['faces'] == 0:
+                    no_faces += 1
                 self.progress_bar['value'] = total_images
                 self.log_display.insert(tk.END, f"Processed {os.path.basename(image_file)}, found {result['faces']} faces.\n")
                 self.log_display.yview(tk.END)
                 self.update_image_preview(image_file, result['output_path'])
 
             if not self.cancel_flag:
-                self.log_display.insert(tk.END, "Processing complete.\n")
+                self.log_display.insert(tk.END, f"Processing complete. Total images processed: {total_images}, Total faces detected: {total_faces}, Total images without faces: {no_faces}.\n")
                 messagebox.showinfo("Success", "Processing complete")
             else:
                 self.log_display.insert(tk.END, "Processing cancelled.\n")
@@ -323,6 +345,7 @@ class ObscurrraGUI(tk.Tk):
         self.total_images_count.config(text=str(total_images))
         self.total_faces_count.config(text=str(total_faces))
 
+
     def cancel_processing(self):
         self.cancel_flag = True
         logging.info("Processing cancelled by user.")
@@ -334,6 +357,19 @@ class ObscurrraGUI(tk.Tk):
     def zoom_out(self):
         self.zoom_factor /= 1.2
         self.update_image_preview()
+
+    def update_image_preview(self, original_image_path=None, processed_image_path=None):
+        if original_image_path:
+            original_image = Image.open(original_image_path)
+            original_image.thumbnail((200, 200), Image.LANCZOS)  # Updated line
+            self.original_image = ImageTk.PhotoImage(original_image)
+            self.original_image_canvas.create_image(0, 0, anchor=tk.NW, image=self.original_image)
+
+        if processed_image_path:
+            processed_image = Image.open(processed_image_path)
+            processed_image.thumbnail((200, 200), Image.LANCZOS)  # Updated line
+            self.processed_image = ImageTk.PhotoImage(processed_image)
+            self.processed_image_canvas.create_image(0, 0, anchor=tk.NW, image=self.processed_image)
 
     def batch_process(self):
         input_folder = self.input_folder_entry.get()
@@ -375,10 +411,11 @@ class ObscurrraGUI(tk.Tk):
     def process_batch_images(self, output_folder, models, selected_images):
         total_images = 0
         total_faces = 0
+        no_faces = 0
         image_files = [os.path.join(self.input_folder_entry.get(), image) for image in selected_images]
 
         blur_intensity = int(self.blur_intensity_value_label.cget("text"))
-        self.image_processor.face_blurrer.BLUR_EFFECT = (blur_intensity, blur_intensity)
+        blur_effect = (blur_intensity, blur_intensity)
 
         try:
             self.log_display.insert(tk.END, "Starting batch processing...\n")
@@ -389,16 +426,18 @@ class ObscurrraGUI(tk.Tk):
                 if self.cancel_flag:
                     break
 
-                result = self.image_processor.process_single_image(image_file, output_folder, models)
+                result = self.image_processor.process_single_image(image_file, output_folder, models, blur_effect)
                 total_images += 1
                 total_faces += result['faces']
+                if result['faces'] == 0:
+                    no_faces += 1
                 self.progress_bar['value'] = total_images
                 self.log_display.insert(tk.END, f"Processed {os.path.basename(image_file)}, found {result['faces']} faces.\n")
                 self.log_display.yview(tk.END)
                 self.update_image_preview(image_file, result['output_path'])
 
             if not self.cancel_flag:
-                self.log_display.insert(tk.END, "Batch processing complete.\n")
+                self.log_display.insert(tk.END, f"Batch processing complete. Total images processed: {total_images}, Total faces detected: {total_faces}, Total images without faces: {no_faces}.\n")
                 messagebox.showinfo("Success", "Batch processing complete")
             else:
                 self.log_display.insert(tk.END, "Batch processing cancelled.\n")
@@ -410,20 +449,9 @@ class ObscurrraGUI(tk.Tk):
 
         self.total_images_count.config(text=str(total_images))
         self.total_faces_count.config(text=str(total_faces))
-        
-    def update_image_preview(self, original_image_path=None, processed_image_path=None):
-        if original_image_path:
-            original_image = Image.open(original_image_path)
-            original_image.thumbnail((200, 200), Image.LANCZOS)  # Updated line
-            self.original_image = ImageTk.PhotoImage(original_image)
-            self.original_image_canvas.create_image(0, 0, anchor=tk.NW, image=self.original_image)
-
-        if processed_image_path:
-            processed_image = Image.open(processed_image_path)
-            processed_image.thumbnail((200, 200), Image.LANCZOS)  # Updated line
-            self.processed_image = ImageTk.PhotoImage(processed_image)
-            self.processed_image_canvas.create_image(0, 0, anchor=tk.NW, image=self.processed_image)
-
+        self.log_display.insert(tk.END, f"Total images processed: {total_images}\n")
+        self.log_display.insert(tk.END, f"Total faces detected: {total_faces}\n")
+        self.log_display.insert(tk.END, f"Total images without faces: {total_images - total_faces}\n")
 
     def show_help(self):
         help_message = (
@@ -608,11 +636,11 @@ class FaceDetection:
 
 
 class FaceBlurrer:
-    BLUR_EFFECT = (70, 70)  # Default value, will be updated dynamically
-
     @staticmethod
     def blur_faces(img, faces, blur_effect):
         try:
+            # Ensure blur_effect is a tuple of integers
+            blur_effect = (int(blur_effect[0]), int(blur_effect[1]))
             for (x, y, w, h) in faces:
                 img[y:y+h, x:x+w] = cv2.blur(img[y:y+h, x:x+w], blur_effect)
             return img
@@ -620,10 +648,9 @@ class FaceBlurrer:
             logging.error(f"Error blurring faces: {e}")
             raise e
 
-
 class ImageProcessor:
     IMAGE_EXTENSIONS = ['*.jpg', '*.jpeg', '*.png', '*.webp']
-    _MAX_IMAGE_SIZE = 1000  # Maximum size of the image's largest dimension
+    _MAX_IMAGE_SIZE = 1000
 
     def __init__(self):
         self.preprocessor = Preprocessor()
@@ -651,16 +678,14 @@ class ImageProcessor:
         try:
             logging.info(f"Processing {image_path}")
             original_img = self.preprocessor.read_image(image_path)
-            resized_img = self.preprocessor.resize_image(original_img.copy(), self.max_image_size)  # Resize the copy for face detection
+            resized_img = self.preprocessor.resize_image(original_img.copy(), self.max_image_size)
             gray = self.preprocessor.preprocess_image(resized_img)
             faces = self.face_detection.choose_model(models, resized_img, gray)
 
-            # Scale factor for translating face coordinates back to original image size
             scale_factor = max(original_img.shape[:2]) / max(resized_img.shape[:2])
 
             if faces:
                 logging.info(f"Detected {len(faces)} face(s) in {image_path}.")
-                # Scale the face coordinates back to original image size
                 faces = [(int(x*scale_factor), int(y*scale_factor), int(w*scale_factor), int(h*scale_factor)) for (x, y, w, h) in faces]
                 self.face_blurrer.blur_faces(original_img, faces, blur_effect)
             else:
@@ -682,7 +707,7 @@ class ImageProcessor:
                 futures = []
                 for extension in self.IMAGE_EXTENSIONS:
                     for filename in glob.glob(os.path.join(input_folder, extension)):
-                        futures.append(executor.submit(self.process_single_image, filename, output_folder, models))
+                        futures.append(executor.submit(self.process_single_image, filename, output_folder, models, blur_effect))
                 for future in futures:
                     result = future.result()
                     total_faces += result['faces']
@@ -692,6 +717,7 @@ class ImageProcessor:
             logging.info(f"Face blurring complete. Time taken: {elapsed_time} seconds.")
             logging.info(f"Total images processed: {total_images}")
             logging.info(f"Total faces found: {total_faces}")
+            logging.info(f"Total images without faces: {total_images - total_faces}")
         except Exception as e:
             logging.error(f"Error processing all images: {e}")
             raise e
