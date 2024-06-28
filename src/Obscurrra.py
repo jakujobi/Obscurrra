@@ -44,13 +44,13 @@ class ScrollableFrame(ttk.Frame):
         self.bind_all("<Shift-MouseWheel>", _on_mouse_wheel)
 
 
-class ObscurrraGUI(tk.Tk):
+class ObscurrraGUI(ThemedTk):
     def __init__(self):
         super().__init__()
 
         self.title("Obscurrra")
-        self.geometry("760x960")
-        self.minsize(760, 960)
+        self.geometry("800x960")
+        self.minsize(800, 960)
 
         self.main_program = MainProgram()
         self.image_processor = ImageProcessor()
@@ -61,7 +61,7 @@ class ObscurrraGUI(tk.Tk):
         self.scrollable_frame = ScrollableFrame(self)
         self.scrollable_frame.pack(fill="both", expand=True)
 
-        self.available_themes = ['clam', 'alt', 'default', 'classic', 'vista', 'xpnative', 'winnative', 'aquativo', 'arc', 'plastik', 'clearlooks', 'smog', 'radiance', 'keramik', 'blue', 'black', 'elegance', 'itft1', 'winxpblue', 'scidblue', 'scidgreen', 'scidmint', 'scidpink', 'scidpurple', 'scidsand', 'scidturquoise', 'scidviolet', 'scidgrey', 'scidlightblue', 'scidlightgreen', 'scidlightturquoise', 'scidlightviolet', 'scidbeige', 'scidbrown', 'scidgray', 'scidolive', 'scidorange', 'scidred', 'scidtan', 'scidtaup']
+        self.available_themes = ['clam', 'alt', 'default', 'classic', 'vista', 'xpnative', 'winnative']
         self.selected_theme = tk.StringVar(value="vista")  # Changed default theme to 'vista'
         self.create_widgets()
 
@@ -85,17 +85,8 @@ class ObscurrraGUI(tk.Tk):
         self.style = ttk.Style(self)
         self.style.theme_use(self.selected_theme.get())
 
-        # Theme selection dropdown
-        theme_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Theme Selection", padding="10")
-        theme_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
-        self.theme_label = ttk.Label(theme_frame, text="Select Theme:")
-        self.theme_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        self.theme_dropdown = ttk.Combobox(theme_frame, textvariable=self.selected_theme, values=self.available_themes)
-        self.theme_dropdown.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-        self.theme_dropdown.bind("<<ComboboxSelected>>", self.change_theme)
-
         top_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Folder Selection", padding="10")
-        top_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        top_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
         top_frame.columnconfigure(1, weight=1)
 
         self.input_folder_label, self.input_folder_entry = self.create_label_entry_pair(top_frame, "Input Folder:", 0, 0)
@@ -109,32 +100,39 @@ class ObscurrraGUI(tk.Tk):
         self.select_images_button = ttk.Button(top_frame, text="Select Individual Images", command=self.browse_images)
         self.select_images_button.grid(row=2, column=0, columnspan=3, padx=5, pady=5)
 
+        # Model Selection and Preferences Frame
+        # Image and Model Selection Frame
         middle_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Image and Model Selection", padding="10")
-        middle_frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
+        middle_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
         middle_frame.columnconfigure(1, weight=1)
+        middle_frame.columnconfigure(2, weight=1)
+        middle_frame.columnconfigure(3, weight=1)
 
         self.images_label = ttk.Label(middle_frame, text="Images:")
         self.images_label.grid(row=0, column=0, padx=5, pady=5, sticky="nw")
         self.images_listbox = tk.Listbox(middle_frame, selectmode=tk.MULTIPLE, width=50, height=10)
-        self.images_listbox.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        self.images_listbox.grid(row=0, column=1, columnspan=3, padx=5, pady=5, sticky="ew")
 
         self.models_label = ttk.Label(middle_frame, text="Face Detection Models:")
         self.models_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.mtcnn_var = tk.BooleanVar()
-        self.mtcnn_checkbox = self.create_checkbox(middle_frame, "MTCNN", self.mtcnn_var, 1, 1, "w")
-        self.frontalface_var = tk.BooleanVar()
-        self.frontalface_checkbox = self.create_checkbox(middle_frame, "Frontal Face", self.frontalface_var, 1, 2, "w")
-        self.profileface_var = tk.BooleanVar()
-        self.profileface_checkbox = self.create_checkbox(middle_frame, "Profile Face", self.profileface_var, 1, 3, "w")
-        self.dlib_var = tk.BooleanVar()
-        self.dlib_checkbox = self.create_checkbox(middle_frame, "Dlib", self.dlib_var, 2, 1, "w")
-        self.facenet_var = tk.BooleanVar()
-        self.facenet_checkbox = self.create_checkbox(middle_frame, "FaceNet", self.facenet_var, 2, 2, "w")
-        self.retinaface_var = tk.BooleanVar()
-        self.retinaface_checkbox = self.create_checkbox(middle_frame, "RetinaFace", self.retinaface_var, 2, 3, "w")
 
+        self.mtcnn_var = tk.BooleanVar()
+        self.mtcnn_checkbox = self.create_checkbox(middle_frame, "MTCNN", self.mtcnn_var, 1, 1, sticky="w")
+        self.frontalface_var = tk.BooleanVar()
+        self.frontalface_checkbox = self.create_checkbox(middle_frame, "Frontal Face", self.frontalface_var, 1, 2, sticky="w")
+        self.profileface_var = tk.BooleanVar()
+        self.profileface_checkbox = self.create_checkbox(middle_frame, "Profile Face", self.profileface_var, 1, 3, sticky="w")
+
+        self.dlib_var = tk.BooleanVar()
+        self.dlib_checkbox = self.create_checkbox(middle_frame, "Dlib", self.dlib_var, 2, 1, sticky="w")
+        self.facenet_var = tk.BooleanVar()
+        self.facenet_checkbox = self.create_checkbox(middle_frame, "FaceNet", self.facenet_var, 2, 2, sticky="w")
+        self.retinaface_var = tk.BooleanVar()
+        self.retinaface_checkbox = self.create_checkbox(middle_frame, "RetinaFace", self.retinaface_var, 2, 3, sticky="w")
+
+        # Preferences Frame
         settings_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Preferences", padding="10")
-        settings_frame.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
+        settings_frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
         settings_frame.columnconfigure(1, weight=1)
 
         self.max_image_size_label, self.max_image_size_entry = self.create_label_entry_pair(settings_frame, "Max Image Size (px):", 0, 0, 10)
@@ -146,7 +144,7 @@ class ObscurrraGUI(tk.Tk):
         self.blur_intensity_value_label.grid(row=1, column=2, padx=5, pady=5, sticky="w")
 
         bottom_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Processing Control and Log", padding="10")
-        bottom_frame.grid(row=4, column=0, padx=10, pady=5, sticky="ew")
+        bottom_frame.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
         bottom_frame.columnconfigure(1, weight=1)
 
         self.start_button = ttk.Button(bottom_frame, text="Start Processing", command=self.start_processing)
@@ -164,8 +162,22 @@ class ObscurrraGUI(tk.Tk):
         self.log_display = scrolledtext.ScrolledText(bottom_frame, width=70, height=8)
         self.log_display.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
 
+        self.total_images_label = ttk.Label(bottom_frame, text="Total Images Processed:")
+        self.total_images_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        self.total_images_count = ttk.Label(bottom_frame, text="0")
+        self.total_images_count.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
+        self.total_faces_label = ttk.Label(bottom_frame, text="Total Faces Detected:")
+        self.total_faces_label.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+        self.total_faces_count = ttk.Label(bottom_frame, text="0")
+        self.total_faces_count.grid(row=4, column=1, padx=5, pady=5, sticky="ew")
+
+        self.time_taken_label = ttk.Label(bottom_frame, text="Time Taken:")
+        self.time_taken_label.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        self.time_taken_count = ttk.Label(bottom_frame, text="0")
+        self.time_taken_count.grid(row=5, column=1, padx=5, pady=5, sticky="ew")
+
         image_preview_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Image Preview", padding="10")
-        image_preview_frame.grid(row=5, column=0, padx=10, pady=5, sticky="ew")
+        image_preview_frame.grid(row=4, column=0, padx=10, pady=5, sticky="ew")
         image_preview_frame.columnconfigure(0, weight=1)
         image_preview_frame.columnconfigure(1, weight=1)
 
@@ -185,7 +197,7 @@ class ObscurrraGUI(tk.Tk):
         self.zoom_out_button.grid(row=2, column=1, padx=5, pady=5)
 
         help_batch_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Help, Feedback, and Batch Processing", padding="10")
-        help_batch_frame.grid(row=6, column=0, padx=10, pady=5, sticky="ew")
+        help_batch_frame.grid(row=5, column=0, padx=10, pady=5, sticky="ew")
         help_batch_frame.columnconfigure(1, weight=1)
 
         self.help_button = ttk.Button(help_batch_frame, text="Help", command=self.show_help)
@@ -195,17 +207,14 @@ class ObscurrraGUI(tk.Tk):
         self.batch_process_button = ttk.Button(help_batch_frame, text="Batch Process", command=self.batch_process)
         self.batch_process_button.grid(row=0, column=2, padx=5, pady=5)
 
-        self.total_images_label = ttk.Label(help_batch_frame, text="Total Images Processed:")
-        self.total_images_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.total_images_count = ttk.Label(help_batch_frame, text="0")
-        self.total_images_count.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
-        self.total_faces_label = ttk.Label(help_batch_frame, text="Total Faces Detected:")
-        self.total_faces_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
-        self.total_faces_count = ttk.Label(help_batch_frame, text="0")
-        self.total_faces_count.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
+        self.theme_label = ttk.Label(help_batch_frame, text="Select Theme:")
+        self.theme_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.theme_dropdown = ttk.Combobox(help_batch_frame, textvariable=self.selected_theme, values=self.available_themes)
+        self.theme_dropdown.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+        self.theme_dropdown.bind("<<ComboboxSelected>>", self.change_theme)
 
         exit_frame = ttk.Frame(self.scrollable_frame.scrollable_frame)
-        exit_frame.grid(row=7, column=0, padx=10, pady=5, sticky="ew")
+        exit_frame.grid(row=6, column=0, padx=10, pady=5, sticky="ew")
         exit_frame.columnconfigure(1, weight=1)
 
         self.save_settings_button = ttk.Button(exit_frame, text="Save Settings", command=self.save_settings)
@@ -214,6 +223,7 @@ class ObscurrraGUI(tk.Tk):
         self.exit_button.grid(row=0, column=1, padx=5, pady=5, sticky="e")
 
         self.redirect_logging()
+
 
     def change_theme(self, event=None):
         available_themes = self.style.theme_names()
@@ -311,6 +321,7 @@ class ObscurrraGUI(tk.Tk):
 
         blur_intensity = int(self.blur_intensity_value_label.cget("text"))
         blur_effect = (blur_intensity, blur_intensity)
+        start_time = time.time()
 
         try:
             self.log_display.insert(tk.END, "Starting processing...\n")
@@ -331,8 +342,11 @@ class ObscurrraGUI(tk.Tk):
                 self.log_display.yview(tk.END)
                 self.update_image_preview(image_file, result['output_path'])
 
+            elapsed_time = time.time() - start_time
+            self.time_taken_count.config(text=f"{elapsed_time:.2f} seconds")
+
             if not self.cancel_flag:
-                self.log_display.insert(tk.END, f"Processing complete. Total images processed: {total_images}, Total faces detected: {total_faces}, Total images without faces: {no_faces}.\n")
+                self.log_display.insert(tk.END, f"Processing complete. Total images processed: {total_images}, Total faces detected: {total_faces}, Total images without faces: {no_faces}, Time taken: {elapsed_time:.2f} seconds.\n")
                 messagebox.showinfo("Success", "Processing complete")
             else:
                 self.log_display.insert(tk.END, "Processing cancelled.\n")
@@ -416,6 +430,7 @@ class ObscurrraGUI(tk.Tk):
 
         blur_intensity = int(self.blur_intensity_value_label.cget("text"))
         blur_effect = (blur_intensity, blur_intensity)
+        start_time = time.time()
 
         try:
             self.log_display.insert(tk.END, "Starting batch processing...\n")
@@ -436,8 +451,11 @@ class ObscurrraGUI(tk.Tk):
                 self.log_display.yview(tk.END)
                 self.update_image_preview(image_file, result['output_path'])
 
+            elapsed_time = time.time() - start_time
+            self.time_taken_count.config(text=f"{elapsed_time:.2f} seconds")
+
             if not self.cancel_flag:
-                self.log_display.insert(tk.END, f"Batch processing complete. Total images processed: {total_images}, Total faces detected: {total_faces}, Total images without faces: {no_faces}.\n")
+                self.log_display.insert(tk.END, f"Batch processing complete. Total images processed: {total_images}, Total faces detected: {total_faces}, Total images without faces: {no_faces}, Time taken: {elapsed_time:.2f} seconds.\n")
                 messagebox.showinfo("Success", "Batch processing complete")
             else:
                 self.log_display.insert(tk.END, "Batch processing cancelled.\n")
@@ -449,9 +467,8 @@ class ObscurrraGUI(tk.Tk):
 
         self.total_images_count.config(text=str(total_images))
         self.total_faces_count.config(text=str(total_faces))
-        self.log_display.insert(tk.END, f"Total images processed: {total_images}\n")
-        self.log_display.insert(tk.END, f"Total faces detected: {total_faces}\n")
-        self.log_display.insert(tk.END, f"Total images without faces: {total_images - total_faces}\n")
+        self.log_display.insert(tk.END, f"Total images processed: {total_images}, Total faces detected: {total_faces}, Total images without faces: {total_images - total_faces}\n")
+        self.log_display.insert(tk.END, f"Time taken: {elapsed_time:.2f} seconds\n")
 
     def show_help(self):
         help_message = (
