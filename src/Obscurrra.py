@@ -76,6 +76,8 @@ class ObscurrraGUI(ThemedTk):
         self.create_widgets()  # Create all widgets
 
         # Set default values for entries and sliders
+        # self.input_folder_entry.insert(0, os.path.expanduser("~"))
+        # self.output_folder_entry.insert(0, os.path.expanduser("~"))
         self.max_image_size_entry.insert(0, "500")
         self.blur_intensity_slider.set(50)
         self.mtcnn_var.set(True)
@@ -137,13 +139,6 @@ class ObscurrraGUI(ThemedTk):
         self.profileface_var = tk.BooleanVar()
         self.profileface_checkbox = self.create_checkbox(middle_frame, "Profile Face", self.profileface_var, 1, 3, sticky="w")
 
-        self.dlib_var = tk.BooleanVar()
-        self.dlib_checkbox = self.create_checkbox(middle_frame, "Dlib", self.dlib_var, 2, 1, sticky="w")
-        self.facenet_var = tk.BooleanVar()
-        self.facenet_checkbox = self.create_checkbox(middle_frame, "FaceNet", self.facenet_var, 2, 2, sticky="w")
-        self.retinaface_var = tk.BooleanVar()
-        self.retinaface_checkbox = self.create_checkbox(middle_frame, "RetinaFace", self.retinaface_var, 2, 3, sticky="w")
-
         # Preferences Frame
         settings_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Preferences", padding="10")
         settings_frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
@@ -163,33 +158,43 @@ class ObscurrraGUI(ThemedTk):
         bottom_frame.columnconfigure(1, weight=1)
 
         self.start_button = ttk.Button(bottom_frame, text="Start Processing", command=self.start_processing)
-        self.start_button.grid(row=0, column=0, padx=5, pady=5)
+        self.start_button.grid(row=1, column=0, padx=5, pady=5)
         self.cancel_button = ttk.Button(bottom_frame, text="Cancel Processing", command=self.cancel_processing)
-        self.cancel_button.grid(row=0, column=1, padx=5, pady=5)
+        self.cancel_button.grid(row=1, column=1, padx=5, pady=5)
+
+        self.pause_button = ttk.Button(bottom_frame, text="Pause Processing", command=self.pause_processing)
+        self.pause_button.grid(row=2, column=0, padx=5, pady=5)
+        self.resume_button = ttk.Button(bottom_frame, text="Resume Processing", command=self.resume_processing, state=tk.DISABLED)
+        self.resume_button.grid(row=2, column=1, padx=5, pady=5)
 
         self.progress_label = ttk.Label(bottom_frame, text="Progress:")
-        self.progress_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.progress_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.progress_bar = ttk.Progressbar(bottom_frame, length=200, mode='determinate')
-        self.progress_bar.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+        self.progress_bar.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
         self.log_label = ttk.Label(bottom_frame, text="Log:")
-        self.log_label.grid(row=2, column=0, padx=5, pady=5, sticky="nw")
+        self.log_label.grid(row=3, column=0, padx=5, pady=5, sticky="nw")
         self.log_display = scrolledtext.ScrolledText(bottom_frame, width=70, height=8)
-        self.log_display.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
+        self.log_display.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
+
+        self.clear_log_button = ttk.Button(bottom_frame, text="Clear Log", command=self.clear_log)
+        self.clear_log_button.grid(row=4, column=0, padx=5, pady=5, sticky="e")
+        self.save_log_button = ttk.Button(bottom_frame, text="Save Log", command=self.save_log)
+        self.save_log_button.grid(row=4, column=1, padx=5, pady=5, sticky="e")
 
         self.total_images_label = ttk.Label(bottom_frame, text="Total Images Processed:")
-        self.total_images_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        self.total_images_label.grid(row=5, column=0, padx=5, pady=5, sticky="w")
         self.total_images_count = ttk.Label(bottom_frame, text="0")
-        self.total_images_count.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
+        self.total_images_count.grid(row=5, column=1, padx=5, pady=5, sticky="w")
         self.total_faces_label = ttk.Label(bottom_frame, text="Total Faces Detected:")
-        self.total_faces_label.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+        self.total_faces_label.grid(row=6, column=0, padx=5, pady=5, sticky="w")
         self.total_faces_count = ttk.Label(bottom_frame, text="0")
-        self.total_faces_count.grid(row=4, column=1, padx=5, pady=5, sticky="ew")
+        self.total_faces_count.grid(row=6, column=1, padx=5, pady=5, sticky="w")
 
         self.time_taken_label = ttk.Label(bottom_frame, text="Time Taken:")
-        self.time_taken_label.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        self.time_taken_label.grid(row=7, column=0, padx=5, pady=5, sticky="w")
         self.time_taken_count = ttk.Label(bottom_frame, text="0")
-        self.time_taken_count.grid(row=5, column=1, padx=5, pady=5, sticky="ew")
+        self.time_taken_count.grid(row=7, column=1, padx=5, pady=5, sticky="ew")
 
         # Image Preview Frame
         image_preview_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Image Preview", padding="10")
@@ -219,10 +224,8 @@ class ObscurrraGUI(ThemedTk):
 
         self.help_button = ttk.Button(help_batch_frame, text="Help", command=self.show_help)
         self.help_button.grid(row=0, column=0, padx=5, pady=5)
-        self.save_log_button = ttk.Button(help_batch_frame, text="Save Log", command=self.save_log)
-        self.save_log_button.grid(row=0, column=1, padx=5, pady=5)
         self.batch_process_button = ttk.Button(help_batch_frame, text="Batch Process", command=self.batch_process)
-        self.batch_process_button.grid(row=0, column=2, padx=5, pady=5)
+        self.batch_process_button.grid(row=0, column=1, padx=5, pady=5)
 
         self.theme_label = ttk.Label(help_batch_frame, text="Select Theme:")
         self.theme_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
@@ -242,6 +245,7 @@ class ObscurrraGUI(ThemedTk):
 
         self.redirect_logging()
 
+
     def change_theme(self, event=None):
         """Changes the theme of the application based on user selection."""
         available_themes = self.style.theme_names()
@@ -258,6 +262,10 @@ class ObscurrraGUI(ThemedTk):
         log_handler = LogHandler(self.log_display)
         logging.getLogger().addHandler(log_handler)
         logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+        
+    def clear_log(self):
+        """Clears the log display."""
+        self.log_display.delete('1.0', tk.END)
 
     def update_blur_intensity_label(self, value):
         """Updates the blur intensity label based on the slider value."""
@@ -265,19 +273,25 @@ class ObscurrraGUI(ThemedTk):
 
     def browse_input_folder(self):
         """Opens a dialog to browse and select the input folder."""
-        folder_selected = filedialog.askdirectory()
+        folder_selected = filedialog.askdirectory(initialdir=os.path.expanduser("~"))
         if folder_selected:
-            self.input_folder_entry.delete(0, tk.END)
-            self.input_folder_entry.insert(0, folder_selected)
-            self.selected_files = []
-            self.load_images()
+            if any([image.lower().endswith(('jpg', 'jpeg', 'png', 'webp')) for image in os.listdir(folder_selected)]):
+                self.input_folder_entry.delete(0, tk.END)
+                self.input_folder_entry.insert(0, folder_selected)
+                self.selected_files = []
+                self.load_images()
+            else:
+                messagebox.showerror("Error", "The selected folder does not contain any valid images.")
 
     def browse_output_folder(self):
         """Opens a dialog to browse and select the output folder."""
-        folder_selected = filedialog.askdirectory()
+        folder_selected = filedialog.askdirectory(initialdir=os.path.expanduser("~"))
         if folder_selected:
-            self.output_folder_entry.delete(0, tk.END)
-            self.output_folder_entry.insert(0, folder_selected)
+            if os.access(folder_selected, os.W_OK):
+                self.output_folder_entry.delete(0, tk.END)
+                self.output_folder_entry.insert(0, folder_selected)
+            else:
+                messagebox.showerror("Error", "The selected folder is not writable.")
 
     def browse_images(self):
         """Opens a dialog to browse and select individual image files."""
@@ -297,9 +311,13 @@ class ObscurrraGUI(ThemedTk):
         else:
             input_folder = self.input_folder_entry.get()
             if os.path.isdir(input_folder):
+                images_found = False
                 for image in os.listdir(input_folder):
                     if image.lower().endswith(('jpg', 'jpeg', 'png', 'webp')):
                         self.images_listbox.insert(tk.END, image)
+                        images_found = True
+                if not images_found:
+                    self.images_listbox.insert(tk.END, "No images selected. Please browse and select images to process.")
             else:
                 messagebox.showerror("Error", "Invalid input folder")
 
@@ -336,7 +354,27 @@ class ObscurrraGUI(ThemedTk):
         self.log_display.delete('1.0', tk.END)
 
         threading.Thread(target=self.process_images, args=(input_folder, output_folder, models)).start()
+        
+    def cancel_processing(self):
+        """Sets the cancel flag to stop processing."""
+        self.cancel_flag = True
+        logging.info("Processing cancelled by user.")
 
+    def pause_processing(self):
+        """Pauses the processing."""
+        self.cancel_flag = True
+        self.pause_button.config(state=tk.DISABLED)
+        self.resume_button.config(state=tk.NORMAL)
+        logging.info("Processing paused by user.")
+
+    def resume_processing(self):
+        """Resumes the processing."""
+        self.cancel_flag = False
+        self.pause_button.config(state=tk.NORMAL)
+        self.resume_button.config(state=tk.DISABLED)
+        logging.info("Processing resumed by user.")
+        threading.Thread(target=self.process_images, args=(self.input_folder_entry.get(), self.output_folder_entry.get(), self.get_selected_models())).start()
+        
     def process_images(self, input_folder, output_folder, models):
         """Processes all images in the input folder using the selected models and blurs detected faces."""
         total_images = 0
@@ -353,7 +391,7 @@ class ObscurrraGUI(ThemedTk):
             self.progress_bar['value'] = 0
             self.progress_bar['maximum'] = len(image_files)
 
-            for image_file in image_files:
+            for index, image_file in enumerate(image_files):
                 if self.cancel_flag:
                     break
 
@@ -363,7 +401,7 @@ class ObscurrraGUI(ThemedTk):
                 if result['faces'] == 0:
                     no_faces += 1
                 self.progress_bar['value'] = total_images
-                self.log_display.insert(tk.END, f"Processed {os.path.basename(image_file)}, found {result['faces']} faces.\n")
+                self.log_display.insert(tk.END, f"Processed {index+1}/{len(image_files)}: {os.path.basename(image_file)}, found {result['faces']} faces.\n")
                 self.log_display.yview(tk.END)
                 self.update_image_preview(image_file, result['output_path'])
 
@@ -383,11 +421,6 @@ class ObscurrraGUI(ThemedTk):
 
         self.total_images_count.config(text=str(total_images))
         self.total_faces_count.config(text=str(total_faces))
-
-    def cancel_processing(self):
-        """Sets the cancel flag to stop processing."""
-        self.cancel_flag = True
-        logging.info("Processing cancelled by user.")
 
     def zoom_in(self):
         """Zooms in on the image preview."""
@@ -838,7 +871,6 @@ class FaceDetection:
         except Exception as e:
             logging.error(f"Error detecting faces with MTCNN: {e}")
             raise e
-
 
 class FaceBlurrer:
     """
