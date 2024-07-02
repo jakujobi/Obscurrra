@@ -55,9 +55,19 @@ class ObscurrraGUI(ThemedTk):
         super().__init__()
 
         # Set the title and window size
-        self.title("Obscurrra")
+        self.title("obscuRRRa")
         self.geometry("800x960")
         self.minsize(800, 960)
+        
+         # Load the logo image
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        logo_path = os.path.join(script_dir, 'obscuRRRa Logo Monogram.png')
+        self.logo_image = Image.open(logo_path)
+        self.logo_image = self.logo_image.resize((150, 190), Image.LANCZOS)
+        self.logo_photo = ImageTk.PhotoImage(self.logo_image)
+
+        # Replace the window icon with the logo image
+        self.wm_iconphoto(False, self.logo_photo)
 
         # Initialize main components
         self.main_program = MainProgram()
