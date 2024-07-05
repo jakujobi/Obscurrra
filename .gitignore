@@ -1,0 +1,93 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+dist/
+build/
+*.egg
+*.eggs
+*.whl
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+*.spec
+
+# mypy
+.mypy_cache/
+
+# Environment variables
+.env
+.venv
+env.bak/
+venv.bak/
+
+# PIL related
+*.pyo
+*.pyd
+
+# Logs
+*.log
+
+# PyInstaller related
+*.manifest
+*.spec
+__pyinstaller/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# JetBrains
+*.iml
+*.iws
+*.ipr
+
+# Other general files
+*.bak
+*.swp
+*.tmp
+*.temp
