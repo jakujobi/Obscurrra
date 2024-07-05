@@ -92,4 +92,4 @@ $RECYCLE.BIN/
 *.tmp
 *.temp
 
-src/test/
+src/test/*
