@@ -59,22 +59,36 @@ class ObscurrraGUI(ThemedTk):
         self.geometry("800x960")
         self.minsize(800, 960)
         
-         # Load the logo image
+        # Load the logo image
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        logo_path = os.path.join(script_dir, 'obscuRRRa Logo Monogram.png')
+        logo_path = os.path.join(script_dir, 'icon.ico')
         self.logo_image = Image.open(logo_path)
         self.logo_image = self.logo_image.resize((150, 190), Image.LANCZOS)
         self.logo_photo = ImageTk.PhotoImage(self.logo_image)
 
         # Replace the window icon with the logo image
         self.wm_iconphoto(False, self.logo_photo)
+        
+        # Replace the window icon with the .ico file
+        ico_path = os.path.join(script_dir, 'icon.ico')
+        self.iconbitmap(ico_path)
 
+        # Load the full logo image for the bottom
+        full_logo_path = os.path.join(script_dir, 'obscuRRRa Logo Full.png')
+        self.full_logo_image = Image.open(full_logo_path)
+        self.full_logo_photo = ImageTk.PhotoImage(self.full_logo_image)
+        
         # Initialize main components
         self.main_program = MainProgram()
         self.image_processor = ImageProcessor()
         self.cancel_flag = False
         self.zoom_factor = 1.0
         self.selected_files = []
+
+        # Define the face detection model variables
+        self.mtcnn_var = tk.BooleanVar()
+        self.frontalface_var = tk.BooleanVar()
+        self.profileface_var = tk.BooleanVar()
 
         # Create a scrollable frame
         self.scrollable_frame = ScrollableFrame(self)
@@ -86,11 +100,10 @@ class ObscurrraGUI(ThemedTk):
         self.create_widgets()  # Create all widgets
 
         # Set default values for entries and sliders
-        # self.input_folder_entry.insert(0, os.path.expanduser("~"))
-        # self.output_folder_entry.insert(0, os.path.expanduser("~"))
         self.max_image_size_entry.insert(0, "500")
         self.blur_intensity_slider.set(50)
         self.mtcnn_var.set(True)
+
 
     def create_label_entry_pair(self, parent, label_text, row, column, entry_width=50):
         """Creates a label and entry widget pair."""
@@ -142,11 +155,8 @@ class ObscurrraGUI(ThemedTk):
         self.models_label = ttk.Label(middle_frame, text="Face Detection Models:")
         self.models_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
-        self.mtcnn_var = tk.BooleanVar()
         self.mtcnn_checkbox = self.create_checkbox(middle_frame, "MTCNN", self.mtcnn_var, 1, 1, sticky="w")
-        self.frontalface_var = tk.BooleanVar()
         self.frontalface_checkbox = self.create_checkbox(middle_frame, "Frontal Face", self.frontalface_var, 1, 2, sticky="w")
-        self.profileface_var = tk.BooleanVar()
         self.profileface_checkbox = self.create_checkbox(middle_frame, "Profile Face", self.profileface_var, 1, 3, sticky="w")
 
         # Preferences Frame
@@ -252,7 +262,7 @@ class ObscurrraGUI(ThemedTk):
         self.save_settings_button.grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.exit_button = ttk.Button(exit_frame, text="Exit", command=self.exit_application)
         self.exit_button.grid(row=0, column=1, padx=5, pady=5, sticky="e")
-
+        
         self.redirect_logging()
 
 
@@ -283,7 +293,8 @@ class ObscurrraGUI(ThemedTk):
 
     def browse_input_folder(self):
         """Opens a dialog to browse and select the input folder."""
-        folder_selected = filedialog.askdirectory(initialdir=os.path.expanduser("~"))
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        folder_selected = filedialog.askdirectory(initialdir=script_dir)
         if folder_selected:
             if any([image.lower().endswith(('jpg', 'jpeg', 'png', 'webp')) for image in os.listdir(folder_selected)]):
                 self.input_folder_entry.delete(0, tk.END)
@@ -295,7 +306,8 @@ class ObscurrraGUI(ThemedTk):
 
     def browse_output_folder(self):
         """Opens a dialog to browse and select the output folder."""
-        folder_selected = filedialog.askdirectory(initialdir=os.path.expanduser("~"))
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        folder_selected = filedialog.askdirectory(initialdir=script_dir)
         if folder_selected:
             if os.access(folder_selected, os.W_OK):
                 self.output_folder_entry.delete(0, tk.END)
@@ -303,14 +315,16 @@ class ObscurrraGUI(ThemedTk):
             else:
                 messagebox.showerror("Error", "The selected folder is not writable.")
 
+
     def browse_images(self):
         """Opens a dialog to browse and select individual image files."""
-        filetypes = [("Image files", "*.jpg *.jpeg *.png *.webp")]
+        filetypes = [("Image files", "*.jpg *.jpeg *.png *.webp *.bmp *.gif *.tiff *.tif *.ico")]
         files_selected = filedialog.askopenfilenames(filetypes=filetypes)
         if files_selected:
             self.selected_files = list(files_selected)
             self.input_folder_entry.delete(0, tk.END)
             self.load_images()
+
 
     def load_images(self):
         """Loads selected images into the images listbox."""
@@ -323,13 +337,14 @@ class ObscurrraGUI(ThemedTk):
             if os.path.isdir(input_folder):
                 images_found = False
                 for image in os.listdir(input_folder):
-                    if image.lower().endswith(('jpg', 'jpeg', 'png', 'webp')):
+                    if image.lower().endswith(('jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'tiff', 'tif', 'ico')):
                         self.images_listbox.insert(tk.END, image)
                         images_found = True
                 if not images_found:
                     self.images_listbox.insert(tk.END, "No images selected. Please browse and select images to process.")
             else:
                 messagebox.showerror("Error", "Invalid input folder")
+
 
     def start_processing(self):
         """Starts the image processing in a separate thread."""
@@ -342,12 +357,6 @@ class ObscurrraGUI(ThemedTk):
             models.append('frontalface')
         if self.profileface_var.get():
             models.append('profileface')
-        if self.dlib_var.get():
-            models.append('dlib')
-        if self.facenet_var.get():
-            models.append('facenet')
-        if self.retinaface_var.get():
-            models.append('retinaface')
 
         if not os.path.isdir(input_folder) and not self.selected_files:
             messagebox.showerror("Error", "Invalid input folder or no images selected")
@@ -390,7 +399,7 @@ class ObscurrraGUI(ThemedTk):
         total_images = 0
         total_faces = 0
         no_faces = 0
-        image_files = self.selected_files if self.selected_files else [os.path.join(input_folder, f) for f in os.listdir(input_folder) if f.lower().endswith(('jpg', 'jpeg', 'png', 'webp'))]
+        image_files = self.selected_files if self.selected_files else [os.path.join(input_folder, f) for f in os.listdir(input_folder) if f.lower().endswith(('jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'tiff', 'tif', 'ico'))]
 
         blur_intensity = int(self.blur_intensity_value_label.cget("text"))
         blur_effect = (blur_intensity, blur_intensity)
@@ -467,12 +476,6 @@ class ObscurrraGUI(ThemedTk):
             models.append('frontalface')
         if self.profileface_var.get():
             models.append('profileface')
-        if self.dlib_var.get():
-            models.append('dlib')
-        if self.facenet_var.get():
-            models.append('facenet')
-        if self.retinaface_var.get():
-            models.append('retinaface')
 
         if not os.path.isdir(input_folder) and not self.selected_files:
             messagebox.showerror("Error", "Invalid input folder or no images selected")
@@ -753,9 +756,16 @@ class FaceDetection:
         """
         Initializes the FaceDetection class and loads face detection models.
         """
+        try:
+            logging.info("Loading MTCNN model")
+            self._mtcnn_detector = MTCNN()
+            logging.info("MTCNN model loaded successfully")
+        except Exception as e:
+            logging.error(f"Error loading MTCNN model: {e}")
+            raise e
+
         self._front_face_cascade = self._load_face_detection_model(self.FRONT_FACE_CASCADE_PATH)
         self._profile_face_cascade = self._load_face_detection_model(self.PROFILE_FACE_CASCADE_PATH)
-        self._mtcnn_detector = MTCNN()
 
     @staticmethod
     def _load_face_detection_model(model_path):
@@ -804,7 +814,10 @@ class FaceDetection:
         """
         faces = []
         if 'mtcnn' in models:
-            faces.extend(self.detect_faces_mtcnn(image))
+            try:
+                faces.extend(self.detect_faces_mtcnn(image))
+            except Exception as e:
+                logging.error(f"Error detecting faces with MTCNN: {e}")
         if 'frontalface' in models:
             faces.extend(self.filter_faces(self.detect_faces(gray_image, self.front_face_cascade), faces))
         if 'profileface' in models:
@@ -875,7 +888,9 @@ class FaceDetection:
             list: List of detected faces as (x, y, w, h) tuples.
         """
         try:
+            logging.info("Attempting to detect faces with MTCNN")
             results = self.mtcnn_detector.detect_faces(image)
+            logging.info(f"MTCNN results: {results}")
             faces = [(result['box'][0], result['box'][1], result['box'][2], result['box'][3]) for result in results]
             return faces
         except Exception as e:
@@ -956,7 +971,7 @@ class ImageProcessor:
         """
         base_name = os.path.basename(image_path)
         name, ext = os.path.splitext(base_name)
-        return os.path.join(output_folder, f"{name}_b{ext}")
+        return os.path.join(output_folder, f"{name}_obs{ext}")
 
     def process_single_image(self, image_path, output_folder, models, blur_effect):
         """
@@ -974,20 +989,35 @@ class ImageProcessor:
         try:
             logging.info(f"Processing {image_path}")
             original_img = self.preprocessor.read_image(image_path)
+            if original_img is None:
+                raise ValueError(f"Failed to load image {image_path}")
+            
+            logging.info("Resizing image")
             resized_img = self.preprocessor.resize_image(original_img.copy(), self.max_image_size)
+            
+            logging.info("Preprocessing image")
             gray = self.preprocessor.preprocess_image(resized_img)
+            
+            logging.info("Choosing face detection model")
             faces = self.face_detection.choose_model(models, resized_img, gray)
+            logging.info(f"Faces detected: {faces}")
 
             scale_factor = max(original_img.shape[:2]) / max(resized_img.shape[:2])
 
             if faces:
                 logging.info(f"Detected {len(faces)} face(s) in {image_path}.")
                 faces = [(int(x*scale_factor), int(y*scale_factor), int(w*scale_factor), int(h*scale_factor)) for (x, y, w, h) in faces]
+                logging.info("Blurring faces")
                 self.face_blurrer.blur_faces(original_img, faces, blur_effect)
             else:
                 logging.info(f"No faces detected in {image_path}.")
+            
             output_path = self.get_output_path(image_path, output_folder)
-            cv2.imwrite(output_path, original_img)
+            logging.info(f"Saving processed image to {output_path}")
+            success = cv2.imwrite(output_path, original_img)
+            if not success:
+                raise IOError(f"Failed to write image to {output_path}")
+            
             logging.info(f"Processed and saved {output_path}")
             return {'faces': len(faces), 'output_path': output_path}
         except Exception as e:
