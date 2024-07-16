@@ -278,11 +278,11 @@ class ObscurrraGUI(ThemedTk):
 
     def redirect_logging(self):
         """Redirects logging output to the GUI's log display."""
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
         log_handler = LogHandler(self.log_display)
         logging.getLogger().addHandler(log_handler)
         logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-        
+    
     def clear_log(self):
         """Clears the log display."""
         self.log_display.delete('1.0', tk.END)
@@ -345,13 +345,14 @@ class ObscurrraGUI(ThemedTk):
             else:
                 messagebox.showerror("Error", "Invalid input folder")
 
-
     def start_processing(self):
-        """Starts the image processing in a separate thread."""
         input_folder = self.input_folder_entry.get()
         output_folder = self.output_folder_entry.get()
         models = []
         if self.mtcnn_var.get():
+            if self.image_processor.face_detection.mtcnn_detector is None:
+                messagebox.showerror("Error", "MTCNN model is not initialized.")
+                return
             models.append('mtcnn')
         if self.frontalface_var.get():
             models.append('frontalface')
@@ -371,8 +372,10 @@ class ObscurrraGUI(ThemedTk):
 
         self.cancel_flag = False
         self.log_display.delete('1.0', tk.END)
-
+        
+        logging.debug("Starting image processing thread.")
         threading.Thread(target=self.process_images, args=(input_folder, output_folder, models)).start()
+
         
     def cancel_processing(self):
         """Sets the cancel flag to stop processing."""
@@ -756,16 +759,22 @@ class FaceDetection:
         """
         Initializes the FaceDetection class and loads face detection models.
         """
-        try:
-            logging.info("Loading MTCNN model")
-            self._mtcnn_detector = MTCNN()
-            logging.info("MTCNN model loaded successfully")
-        except Exception as e:
-            logging.error(f"Error loading MTCNN model: {e}")
-            raise e
-
+        logging.info("Initializing FaceDetection")
         self._front_face_cascade = self._load_face_detection_model(self.FRONT_FACE_CASCADE_PATH)
         self._profile_face_cascade = self._load_face_detection_model(self.PROFILE_FACE_CASCADE_PATH)
+        self._mtcnn_detector = None
+        self._initialize_mtcnn()
+        
+    def _initialize_mtcnn(self):
+        try:
+            logging.info("Initializing MTCNN model.")
+            self._mtcnn_detector = MTCNN()
+            if self._mtcnn_detector is not None:
+                logging.info("MTCNN model initialized successfully.")
+            else:
+                logging.error("MTCNN model initialization failed.")
+        except Exception as e:
+            logging.error(f"Error initializing MTCNN: {e}")
 
     @staticmethod
     def _load_face_detection_model(model_path):
@@ -779,6 +788,7 @@ class FaceDetection:
             CascadeClassifier: The loaded face detection model.
         """
         try:
+            logging.info(f"Loading face detection model from {model_path}")
             model = cv2.CascadeClassifier(model_path)
             return model
         except Exception as e:
@@ -814,10 +824,13 @@ class FaceDetection:
         """
         faces = []
         if 'mtcnn' in models:
-            try:
-                faces.extend(self.detect_faces_mtcnn(image))
-            except Exception as e:
-                logging.error(f"Error detecting faces with MTCNN: {e}")
+            if self._mtcnn_detector is not None:
+                try:
+                    faces.extend(self.detect_faces_mtcnn(image))
+                except Exception as e:
+                    logging.error(f"Error detecting faces with MTCNN: {e}")
+            else:
+                logging.error("MTCNN detector is not initialized.")
         if 'frontalface' in models:
             faces.extend(self.filter_faces(self.detect_faces(gray_image, self.front_face_cascade), faces))
         if 'profileface' in models:
@@ -888,14 +901,16 @@ class FaceDetection:
             list: List of detected faces as (x, y, w, h) tuples.
         """
         try:
-            logging.info("Attempting to detect faces with MTCNN")
-            results = self.mtcnn_detector.detect_faces(image)
-            logging.info(f"MTCNN results: {results}")
+            if self._mtcnn_detector is None:
+                logging.error("MTCNN detector is not initialized.")
+                return []
+
+            results = self._mtcnn_detector.detect_faces(image)
             faces = [(result['box'][0], result['box'][1], result['box'][2], result['box'][3]) for result in results]
             return faces
         except Exception as e:
             logging.error(f"Error detecting faces with MTCNN: {e}")
-            raise e
+            return []
 
 class FaceBlurrer:
     """
