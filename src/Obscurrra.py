@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk, scrolledtext
-from ttkthemes import ThemedTk
 
 import os
 import logging
@@ -44,10 +43,10 @@ class ScrollableFrame(ttk.Frame):
         self.bind_all("<Shift-MouseWheel>", _on_mouse_wheel)
 
 
-class ObscurrraGUI(ThemedTk):
+class ObscurrraGUI(tk.Tk):
     """
     This class represents the main GUI application for Obscurrra.
-    It is built using Tkinter and ThemedTk for themed widgets.
+    It is built using Tkinter and tk.Tk for themed widgets.
     """
 
     def __init__(self):
@@ -118,6 +117,87 @@ class ObscurrraGUI(ThemedTk):
         checkbox = ttk.Checkbutton(parent, text=text, variable=variable)
         checkbox.grid(row=row, column=column, padx=5, pady=5, sticky=sticky)
         return checkbox
+    
+    def save_log(self):
+        """Saves the log to a file."""
+        log_content = self.log_display.get("1.0", tk.END)
+        log_file = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
+        if log_file:
+            with open(log_file, "w") as file:
+                file.write(log_content)
+            logging.info(f"Log saved to {log_file}")
+
+    def redirect_logging(self):
+        """Redirects logging output to the GUI's log display."""
+        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+        log_handler = LogHandler(self.log_display)
+        logging.getLogger().addHandler(log_handler)
+        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+    
+    def clear_log(self):
+        """Clears the log display."""
+        self.log_display.delete('1.0', tk.END)
+        logging.info("Log display cleared")
+
+    def browse_input_folder(self):
+        """Opens a dialog to browse and select the input folder."""
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        folder_selected = filedialog.askdirectory(initialdir=script_dir)
+        if folder_selected:
+            if any([image.lower().endswith(('jpg', 'jpeg', 'png', 'webp')) for image in os.listdir(folder_selected)]):
+                self.input_folder_entry.delete(0, tk.END)
+                self.input_folder_entry.insert(0, folder_selected)
+                self.selected_files = []
+                self.load_images()
+                logging.info(f"Selected input folder: {folder_selected}")
+            else:
+                logging.error("The selected folder does not contain any valid images.")
+                messagebox.showerror("Error", "The selected folder does not contain any valid images.")
+
+    def browse_output_folder(self):
+        """Opens a dialog to browse and select the output folder."""
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        folder_selected = filedialog.askdirectory(initialdir=script_dir)
+        if folder_selected:
+            if os.access(folder_selected, os.W_OK):
+                self.output_folder_entry.delete(0, tk.END)
+                self.output_folder_entry.insert(0, folder_selected)
+                logging.info(f"Selected output folder: {folder_selected}")
+            else:
+                logging.error("The selected folder is not writable.")
+                messagebox.showerror("Error", "The selected folder is not writable.")
+
+    def browse_images(self):
+        """Opens a dialog to browse and select individual image files."""
+        filetypes = [("Image files", "*.jpg *.jpeg *.png *.webp *.bmp *.gif *.tiff *.tif *.ico")]
+        files_selected = filedialog.askopenfilenames(filetypes=filetypes)
+        if files_selected:
+            self.selected_files = list(files_selected)
+            self.input_folder_entry.delete(0, tk.END)
+            self.load_images()
+            logging.info(f"Selected individual images: {files_selected}")
+
+    def load_images(self):
+        """Loads selected images into the images listbox."""
+        self.images_listbox.delete(0, tk.END)
+        if self.selected_files:
+            for image in self.selected_files:
+                self.images_listbox.insert(tk.END, os.path.basename(image))
+            logging.info(f"Loaded selected images: {self.selected_files}")
+        else:
+            input_folder = self.input_folder_entry.get()
+            if os.path.isdir(input_folder):
+                images_found = False
+                for image in os.listdir(input_folder):
+                    if image.lower().endswith(('jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'tiff', 'tif', 'ico')):
+                        self.images_listbox.insert(tk.END, image)
+                        images_found = True
+                if not images_found:
+                    self.images_listbox.insert(tk.END, "No images selected. Please browse and select images to process.")
+                logging.info(f"Loaded images from folder: {input_folder}")
+            else:
+                logging.error("Invalid input folder")
+                messagebox.showerror("Error", "Invalid input folder")
 
     def create_widgets(self):
         """Creates all the widgets for the GUI."""
@@ -271,79 +351,16 @@ class ObscurrraGUI(ThemedTk):
         available_themes = self.style.theme_names()
         selected_theme = self.selected_theme.get()
         if selected_theme in available_themes:
+            logging.info(f"Changing theme to {selected_theme}")
             self.style.theme_use(selected_theme)
         else:
-            print(f"Theme {selected_theme} is not available. Skipping...")
+            logging.warning(f"Theme {selected_theme} is not available. Skipping...")
             self.style.theme_use('vista')  # Set default theme
-
-    def redirect_logging(self):
-        """Redirects logging output to the GUI's log display."""
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-        log_handler = LogHandler(self.log_display)
-        logging.getLogger().addHandler(log_handler)
-        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-    
-    def clear_log(self):
-        """Clears the log display."""
-        self.log_display.delete('1.0', tk.END)
 
     def update_blur_intensity_label(self, value):
         """Updates the blur intensity label based on the slider value."""
         self.blur_intensity_value_label.config(text=str(int(float(value))))
-
-    def browse_input_folder(self):
-        """Opens a dialog to browse and select the input folder."""
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        folder_selected = filedialog.askdirectory(initialdir=script_dir)
-        if folder_selected:
-            if any([image.lower().endswith(('jpg', 'jpeg', 'png', 'webp')) for image in os.listdir(folder_selected)]):
-                self.input_folder_entry.delete(0, tk.END)
-                self.input_folder_entry.insert(0, folder_selected)
-                self.selected_files = []
-                self.load_images()
-            else:
-                messagebox.showerror("Error", "The selected folder does not contain any valid images.")
-
-    def browse_output_folder(self):
-        """Opens a dialog to browse and select the output folder."""
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        folder_selected = filedialog.askdirectory(initialdir=script_dir)
-        if folder_selected:
-            if os.access(folder_selected, os.W_OK):
-                self.output_folder_entry.delete(0, tk.END)
-                self.output_folder_entry.insert(0, folder_selected)
-            else:
-                messagebox.showerror("Error", "The selected folder is not writable.")
-
-
-    def browse_images(self):
-        """Opens a dialog to browse and select individual image files."""
-        filetypes = [("Image files", "*.jpg *.jpeg *.png *.webp *.bmp *.gif *.tiff *.tif *.ico")]
-        files_selected = filedialog.askopenfilenames(filetypes=filetypes)
-        if files_selected:
-            self.selected_files = list(files_selected)
-            self.input_folder_entry.delete(0, tk.END)
-            self.load_images()
-
-
-    def load_images(self):
-        """Loads selected images into the images listbox."""
-        self.images_listbox.delete(0, tk.END)
-        if self.selected_files:
-            for image in self.selected_files:
-                self.images_listbox.insert(tk.END, os.path.basename(image))
-        else:
-            input_folder = self.input_folder_entry.get()
-            if os.path.isdir(input_folder):
-                images_found = False
-                for image in os.listdir(input_folder):
-                    if image.lower().endswith(('jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'tiff', 'tif', 'ico')):
-                        self.images_listbox.insert(tk.END, image)
-                        images_found = True
-                if not images_found:
-                    self.images_listbox.insert(tk.END, "No images selected. Please browse and select images to process.")
-            else:
-                messagebox.showerror("Error", "Invalid input folder")
+        logging.info(f"Blur intensity set to {value}")
 
     def start_processing(self):
         input_folder = self.input_folder_entry.get()
@@ -352,6 +369,7 @@ class ObscurrraGUI(ThemedTk):
         if self.mtcnn_var.get():
             if self.image_processor.face_detection.mtcnn_detector is None:
                 messagebox.showerror("Error", "MTCNN model is not initialized.")
+                logging.error("MTCNN model is not initialized.")
                 return
             models.append('mtcnn')
         if self.frontalface_var.get():
@@ -361,6 +379,7 @@ class ObscurrraGUI(ThemedTk):
 
         if not os.path.isdir(input_folder) and not self.selected_files:
             messagebox.showerror("Error", "Invalid input folder or no images selected")
+            logging.error("Invalid input folder or no images selected")
             return
 
         if not os.path.isdir(output_folder):
@@ -369,6 +388,7 @@ class ObscurrraGUI(ThemedTk):
                 os.makedirs(output_folder)
             self.output_folder_entry.delete(0, tk.END)
             self.output_folder_entry.insert(0, output_folder)
+        logging.info(f"Output folder set to: {output_folder}")
 
         self.cancel_flag = False
         self.log_display.delete('1.0', tk.END)
@@ -376,7 +396,6 @@ class ObscurrraGUI(ThemedTk):
         logging.debug("Starting image processing thread.")
         threading.Thread(target=self.process_images, args=(input_folder, output_folder, models)).start()
 
-        
     def cancel_processing(self):
         """Sets the cancel flag to stop processing."""
         self.cancel_flag = True
@@ -396,7 +415,7 @@ class ObscurrraGUI(ThemedTk):
         self.resume_button.config(state=tk.DISABLED)
         logging.info("Processing resumed by user.")
         threading.Thread(target=self.process_images, args=(self.input_folder_entry.get(), self.output_folder_entry.get(), self.get_selected_models())).start()
-        
+  
     def process_images(self, input_folder, output_folder, models):
         """Processes all images in the input folder using the selected models and blurs detected faces."""
         total_images = 0
@@ -417,7 +436,13 @@ class ObscurrraGUI(ThemedTk):
                 if self.cancel_flag:
                     break
 
-                result = self.image_processor.process_single_image(image_file, output_folder, models, blur_effect)
+                try:
+                    result = self.image_processor.process_single_image(image_file, output_folder, models, blur_effect)
+                except Exception as e:
+                    logging.error(f"Error processing image {image_file}: {e}")
+                    self.log_display.insert(tk.END, f"Error processing image {image_file}: {e}\n")
+                    continue
+
                 total_images += 1
                 total_faces += result['faces']
                 if result['faces'] == 0:
@@ -444,16 +469,20 @@ class ObscurrraGUI(ThemedTk):
         self.total_images_count.config(text=str(total_images))
         self.total_faces_count.config(text=str(total_faces))
 
+
     def zoom_in(self):
         """Zooms in on the image preview."""
         self.zoom_factor *= 1.2
         self.update_image_preview()
+        logging.info("Zoomed in on image preview")
 
     def zoom_out(self):
         """Zooms out on the image preview."""
         self.zoom_factor /= 1.2
         self.update_image_preview()
+        logging.info("Zoomed out on image preview")
 
+ 
     def update_image_preview(self, original_image_path=None, processed_image_path=None):
         """Updates the image preview with the original and processed images."""
         if original_image_path:
@@ -482,6 +511,7 @@ class ObscurrraGUI(ThemedTk):
 
         if not os.path.isdir(input_folder) and not self.selected_files:
             messagebox.showerror("Error", "Invalid input folder or no images selected")
+            logging.error("Invalid input folder or no images selected")
             return
 
         if not os.path.isdir(output_folder):
@@ -494,6 +524,7 @@ class ObscurrraGUI(ThemedTk):
         selected_images = [self.images_listbox.get(idx) for idx in self.images_listbox.curselection()]
         if not selected_images:
             messagebox.showerror("Error", "No images selected")
+            logging.error("No images selected for batch processing")
             return
 
         self.cancel_flag = False
@@ -520,7 +551,13 @@ class ObscurrraGUI(ThemedTk):
                 if self.cancel_flag:
                     break
 
-                result = self.image_processor.process_single_image(image_file, output_folder, models, blur_effect)
+                try:
+                    result = self.image_processor.process_single_image(image_file, output_folder, models, blur_effect)
+                except Exception as e:
+                    logging.error(f"Error processing image {image_file}: {e}")
+                    self.log_display.insert(tk.END, f"Error processing image {image_file}: {e}\n")
+                    continue
+
                 total_images += 1
                 total_faces += result['faces']
                 if result['faces'] == 0:
@@ -548,6 +585,7 @@ class ObscurrraGUI(ThemedTk):
         self.total_faces_count.config(text=str(total_faces))
         self.log_display.insert(tk.END, f"Total images processed: {total_images}, Total faces detected: {total_faces}, Total images without faces: {total_images - total_faces}\n")
         self.log_display.insert(tk.END, f"Time taken: {elapsed_time:.2f} seconds\n")
+
 
     def show_help(self):
         """Displays the help message."""
@@ -579,22 +617,17 @@ Please use responsibly and respect privacy and ethical considerations.
 '''
         )
         messagebox.showinfo("Help", help_message)
-
-    def save_log(self):
-        """Saves the log to a file."""
-        log_content = self.log_display.get("1.0", tk.END)
-        log_file = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
-        if log_file:
-            with open(log_file, "w") as file:
-                file.write(log_content)
+        logging.info("Displayed help message")
 
     def save_settings(self):
         """Placeholder for saving settings (not implemented)."""
-        pass
+        logging.info("Save settings (not implemented)")
 
     def exit_application(self):
         """Exits the application."""
+        logging.info("Exiting application")
         self.destroy()
+        
 
 class LogHandler(logging.Handler):
     """
@@ -620,7 +653,6 @@ class LogHandler(logging.Handler):
         log_entry = self.format(record)
         self.log_display.insert(tk.END, log_entry + "\n")
         self.log_display.yview(tk.END)
-
 
 class MainProgram:
     """
@@ -709,6 +741,7 @@ class Preprocessor:
         """
         img = cv2.imread(image_path)
         if img is None:
+            logging.error(f"Error reading image {image_path}.")
             raise ValueError(f"Error reading image {image_path}.")
         return img
 
@@ -729,6 +762,7 @@ class Preprocessor:
             scale = max_dimension / max(height, width)
             new_size = (int(width * scale), int(height * scale))
             resized_image = cv2.resize(image, new_size, interpolation=cv2.INTER_AREA)
+            logging.info(f"Resized image to {new_size}")
             return resized_image
         return image
 
@@ -745,6 +779,7 @@ class Preprocessor:
         """
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         gray = cv2.equalizeHist(gray)
+        logging.info("Preprocessed image to grayscale and equalized histogram")
         return gray
 
 
@@ -885,6 +920,7 @@ class FaceDetection:
         """
         try:
             faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+            logging.info(f"Detected {len(faces)} faces using {face_cascade}")
             return faces
         except Exception as e:
             logging.error(f"Error detecting faces: {e}")
@@ -907,10 +943,12 @@ class FaceDetection:
 
             results = self._mtcnn_detector.detect_faces(image)
             faces = [(result['box'][0], result['box'][1], result['box'][2], result['box'][3]) for result in results]
+            logging.info(f"Detected {len(faces)} faces using MTCNN")
             return faces
         except Exception as e:
             logging.error(f"Error detecting faces with MTCNN: {e}")
             return []
+
 
 class FaceBlurrer:
     """
@@ -934,10 +972,12 @@ class FaceBlurrer:
             blur_effect = (int(blur_effect[0]), int(blur_effect[1]))
             for (x, y, w, h) in faces:
                 img[y:y+h, x:x+w] = cv2.blur(img[y:y+h, x:x+w], blur_effect)
+            logging.info(f"Applied blur effect to faces: {faces}")
             return img
         except Exception as e:
             logging.error(f"Error blurring faces: {e}")
             raise e
+
 
 class ImageProcessor:
     """
@@ -1039,6 +1079,7 @@ class ImageProcessor:
             logging.error(f"Error processing {image_path}: {e}")
             raise e
 
+
     def process_all_images(self, input_folder, output_folder, models):
         """
         Processes all images in the input folder using the specified face detection models.
@@ -1072,6 +1113,13 @@ class ImageProcessor:
             raise e
 
 
+
 if __name__ == "__main__":
-    app = ObscurrraGUI()
-    app.mainloop()
+    try:
+        logging.info("Starting Obscurrra GUI application.")
+        app = ObscurrraGUI()
+        app.mainloop()
+        logging.info("Obscurrra GUI application closed.")
+    except Exception as e:
+        logging.error(f"Unhandled exception in the main execution: {e}")
+        raise
