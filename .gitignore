@@ -93,3 +93,4 @@ $RECYCLE.BIN/
 *.temp
 
 src/test/*
+output/_internal/*
