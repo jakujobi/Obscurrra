@@ -9,7 +9,7 @@ import sys
 import cv2
 import glob
 import time
-from mtcnn import MTCNN
+from mtcnn.mtcnn import MTCNN
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -808,14 +808,9 @@ class FaceDetection:
 
     def _initialize_mtcnn(self):
         try:
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            weights_path = os.path.join(script_dir, FaceDetection.MTCNN_WEIGHTS_PATH)
             logging.info("Initializing MTCNN model.")
-            self._mtcnn_detector = MTCNN(weights_file=weights_path)
-            if self._mtcnn_detector is not None:
-                logging.info("MTCNN model initialized successfully.")
-            else:
-                logging.error("MTCNN model initialization failed.")
+            self._mtcnn_detector = MTCNN()
+            logging.info("MTCNN model initialized successfully.")
         except Exception as e:
             logging.error(f"Error initializing MTCNN: {e}")
 
@@ -831,12 +826,16 @@ class FaceDetection:
             CascadeClassifier: The loaded face detection model.
         """
         try:
-            logging.info(f"Loading face detection model from {model_path}")
+            if not os.path.isfile(model_path):
+                raise FileNotFoundError(f"Model file not found: {model_path}")
             model = cv2.CascadeClassifier(model_path)
+            if model.empty():
+                raise IOError(f"Failed to load model from: {model_path}")
+            logging.info(f"Loaded face detection model from {model_path}")
             return model
         except Exception as e:
             logging.error(f"Error loading face detection model: {e}")
-            raise e
+            return None
 
     @property
     def front_face_cascade(self):
@@ -874,9 +873,9 @@ class FaceDetection:
                     logging.error(f"Error detecting faces with MTCNN: {e}")
             else:
                 logging.error("MTCNN detector is not initialized.")
-        if 'frontalface' in models:
+        if 'frontalface' in models and self.front_face_cascade:
             faces.extend(self.filter_faces(self.detect_faces(gray_image, self.front_face_cascade), faces))
-        if 'profileface' in models:
+        if 'profileface' in models and self.profile_face_cascade:
             faces.extend(self.filter_faces(self.detect_faces(gray_image, self.profile_face_cascade), faces))
         return faces
 
@@ -932,7 +931,7 @@ class FaceDetection:
             return faces
         except Exception as e:
             logging.error(f"Error detecting faces: {e}")
-            raise e
+            return []
 
     def detect_faces_mtcnn(self, image):
         """
@@ -1125,11 +1124,21 @@ class ImageProcessor:
 
 
 if __name__ == "__main__":
-    try:
-        logging.info("Starting Obscurrra GUI application.")
-        app = ObscurrraGUI()
-        app.mainloop()
-        logging.info("Obscurrra GUI application closed.")
-    except Exception as e:
-        logging.error(f"Unhandled exception in the main execution: {e}")
-        raise
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+    # Initialize FaceDetection
+    face_detector = FaceDetection()
+
+    # Test with an example image
+    example_image_path = "00001.png"  # Update to the correct image file
+    if not os.path.isfile(example_image_path):
+        logging.error(f"Test image not found: {example_image_path}")
+    else:
+        image = cv2.imread(example_image_path)
+        if image is None:
+            logging.error(f"Error reading image: {example_image_path}")
+        else:
+            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            models_to_use = ['mtcnn', 'frontalface', 'profileface']
+            detected_faces = face_detector.choose_model(models_to_use, image, gray_image)
+            print("Detected faces:", detected_faces)
