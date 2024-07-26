@@ -1015,7 +1015,7 @@ class ImageProcessor:
         if value > 0:
             self._MAX_IMAGE_SIZE = value
         else:
-            raise ValueError("Maximum image size must be greater than 0.")
+            raise ValueError("Error, Maximum image size must be greater than 0.")
 
     @staticmethod
     def get_output_path(image_path, output_folder):
@@ -1031,6 +1031,8 @@ class ImageProcessor:
         """
         base_name = os.path.basename(image_path)
         name, ext = os.path.splitext(base_name)
+        logging.info(f"Received output path")
+        
         return os.path.join(output_folder, f"{name}_obs{ext}")
 
     def process_single_image(self, image_path, output_folder, models, blur_effect):
