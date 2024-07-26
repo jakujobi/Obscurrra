@@ -14,32 +14,24 @@ import time
 from mtcnn import MTCNN
 from concurrent.futures import ThreadPoolExecutor
 
-# Import PyInstaller modules
-from PyInstaller.utils.hooks import collect_data_files
-from PyInstaller.__main__ import run
-
 block_cipher = None
 
 # Define the location of the MTCNN weights file (relative to the script)
 mtcnn_weights_path = 'mtcnn_weights.npy'  # Now it's in the same folder
 
-# Collect data files (Haarcascade and MTCNN weights)
-datas = collect_data_files(['cv2'], include_pyz=False)
-datas.extend([
-    ('icon.ico', '.'),
-    ('obscuRRRa Logo Full.png', '.'),
-    ('obscuRRRa Logo Monogram.png', '.'),
-    ('obscuRRRa Profile image.png', '.'),
-    (mtcnn_weights_path, 'mtcnn_weights'),  # No need for a separate folder
-    ('haarcascade_frontalface_default.xml', 'haarcascades'),
-    ('haarcascade_profileface.xml', 'haarcascades')
-])
-
 a = Analysis(
     ['Obscurrra.py'],
     pathex=['.'],
     binaries=[],
-    datas=datas,
+    datas=[
+        ('icon.ico', '.'),
+        ('obscuRRRa Logo Full.png', '.'),
+        ('obscuRRRa Logo Monogram.png', '.'),
+        ('obscuRRRa Profile image.png', '.'),
+        (mtcnn_weights_path, 'mtcnn_weights'),  # No need for a separate folder
+        ('haarcascade_frontalface_default.xml', 'haarcascades'),
+        ('haarcascade_profileface.xml', 'haarcascades')
+    ],
     hiddenimports=[
         'pkg_resources',
         'pkg_resources.extern',
@@ -84,6 +76,3 @@ coll = COLLECT(
     upx_exclude=[],
     name='Obscurrra',
 )
-
-# Run PyInstaller
-run(['Obscurrra.spec'])
