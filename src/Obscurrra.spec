@@ -7,10 +7,9 @@ from ttkthemes import ThemedTk
 block_cipher = None
 
 # Define the location of the Haarcascade and MTCNN weights file
-script_dir = os.path.dirname(__file__)
-haarcascade_frontalface_path = os.path.join(script_dir, 'haarcascade_frontalface_default.xml')
-haarcascade_profileface_path = os.path.join(script_dir, 'haarcascade_profileface.xml')
-mtcnn_weights_path = os.path.join(script_dir, 'mtcnn_weights.npy')
+haarcascade_frontalface_path = 'haarcascade_frontalface_default.xml'
+haarcascade_profileface_path = 'haarcascade_profileface.xml'
+mtcnn_weights_path = 'mtcnn_weights.npy'
 
 a = Analysis(
     ['Obscurrra.py'],
