@@ -36,6 +36,9 @@ class ScrollableFrame(ttk.Frame):
         self.bind_mouse_wheel(canvas)
 
     def bind_mouse_wheel(self, canvas):
+        """
+        This allows the content to scroll within the frame
+        """
         def _on_mouse_wheel(event):
             canvas.yview_scroll(-1 * int(event.delta / 120), "units")
 
@@ -374,8 +377,10 @@ class ObscurrraGUI(tk.Tk):
             models.append('mtcnn')
         if self.frontalface_var.get():
             models.append('frontalface')
+            logging.info(f"Frontface model appended")
         if self.profileface_var.get():
             models.append('profileface')
+            logging.info(f"Frontface model appended")
 
         if not os.path.isdir(input_folder) and not self.selected_files:
             messagebox.showerror("Error", "Invalid input folder or no images selected")
@@ -920,7 +925,7 @@ class FaceDetection:
         """
         try:
             faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-            logging.info(f"Detected {len(faces)} faces using {face_cascade}")
+            logging.info(f"Detected {len(faces)} faces using {face_cascade} model")
             return faces
         except Exception as e:
             logging.error(f"Error detecting faces: {e}")
