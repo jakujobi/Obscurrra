@@ -1,50 +1,41 @@
 # -*- mode: python ; coding: utf-8 -*-
-import mtcnn
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk, scrolledtext
-
 import os
-import logging
-from PIL import Image, ImageTk
-import threading
-import sys
-import cv2
-import glob
-import time
 from mtcnn import MTCNN
-from concurrent.futures import ThreadPoolExecutor
-
-# Import PyInstaller modules
-from PyInstaller.utils.hooks import collect_data_files
-from PyInstaller.__main__ import run
+from tkinter import filedialog, messagebox, ttk, scrolledtext
+from ttkthemes import ThemedTk
 
 block_cipher = None
 
-# Define the location of the MTCNN weights file (relative to the script)
-mtcnn_weights_path = 'mtcnn_weights.npy'  # Now it's in the same folder
-
-# Collect data files (Haarcascade and MTCNN weights)
-datas = collect_data_files(['cv2'], include_pyz=False)
-datas.extend([
-    ('icon.ico', '.'),
-    ('obscuRRRa Logo Full.png', '.'),
-    ('obscuRRRa Logo Monogram.png', '.'),
-    ('obscuRRRa Profile image.png', '.'),
-    (mtcnn_weights_path, 'mtcnn_weights'),  # No need for a separate folder
-    ('haarcascade_frontalface_default.xml', 'haarcascades'),
-    ('haarcascade_profileface.xml', 'haarcascades')
-])
+# Define the location of the Haarcascade and MTCNN weights file
+script_dir = os.path.dirname(__file__)
+haarcascade_frontalface_path = os.path.join(script_dir, 'haarcascade_frontalface_default.xml')
+haarcascade_profileface_path = os.path.join(script_dir, 'haarcascade_profileface.xml')
+mtcnn_weights_path = os.path.join(script_dir, 'mtcnn_weights.npy')
 
 a = Analysis(
     ['Obscurrra.py'],
     pathex=['.'],
     binaries=[],
-    datas=datas,
+    datas=[
+        ('icon.ico', '.'),
+        ('obscuRRRa Logo Full.png', '.'),
+        ('obscuRRRa Logo Monogram.png', '.'),
+        ('obscuRRRa Profile image.png', '.'),
+        (mtcnn_weights_path, '.'),
+        (haarcascade_frontalface_path, '.'),
+        (haarcascade_profileface_path, '.')
+    ],
     hiddenimports=[
         'pkg_resources',
         'pkg_resources.extern',
         'setuptools',
-        'mtcnn'
+        'tensorflow',
+        'tensorflow._api.v2.compat.v1',
+        'tensorflow._api.v2.compat.v1.compat',
+        'tensorflow._api.v2.compat.v1.compat.v2',
+        'tensorflow._api.v2.compat.v2',
+        'tensorflow._api.v2.compat.v2.compat',
+        'tensorflow._api.v2.compat.v2.compat.v1',
     ],
     hookspath=[],
     runtime_hooks=[],
@@ -58,6 +49,7 @@ a = Analysis(
     win_private_assemblies=False,
     cipher=block_cipher,
 )
+
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
@@ -69,7 +61,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,  # Enable UPX compression
+    upx=True,
     console=False,
     icon='icon.ico',
 )
@@ -84,6 +76,3 @@ coll = COLLECT(
     upx_exclude=[],
     name='Obscurrra',
 )
-
-# Run PyInstaller
-run(['Obscurrra.spec'])
