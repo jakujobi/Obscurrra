@@ -792,8 +792,8 @@ class FaceDetection:
     """
     Class for detecting faces in images using various models.
     """
-    FRONT_FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-    PROFILE_FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_profileface.xml'
+    FRONT_FACE_CASCADE_PATH = 'haarcascade_frontalface_default.xml'
+    PROFILE_FACE_CASCADE_PATH = 'haarcascade_profileface.xml'
 
     def __init__(self):
         """
@@ -804,17 +804,17 @@ class FaceDetection:
         self._profile_face_cascade = self._load_face_detection_model(self.PROFILE_FACE_CASCADE_PATH)
         self._mtcnn_detector = None
         self._initialize_mtcnn()
-        
+
     def _initialize_mtcnn(self):
         try:
-            logging.info("Initializing MTCNN model.")
-            self._mtcnn_detector = MTCNN()
-            if self._mtcnn_detector is not None:
-                logging.info("MTCNN model initialized successfully.")
-            else:
-                logging.error("MTCNN model initialization failed.")
+            logging.info(f"Loading face detection model from {model_path}")
+            model = cv2.CascadeClassifier(model_path)
+            if model.empty():
+                raise ValueError(f"Failed to load model from {model_path}")
+            return model
         except Exception as e:
-            logging.error(f"Error initializing MTCNN: {e}")
+            logging.error(f"Error loading face detection model: {e}")
+            raise e
 
     @staticmethod
     def _load_face_detection_model(model_path):
