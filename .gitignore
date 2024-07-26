@@ -37,8 +37,7 @@ coverage.xml
 .ipynb_checkpoints
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-# *.spec
+#  Usually these files are written by a python script from a template (*.spec)
 
 # mypy
 .mypy_cache/
