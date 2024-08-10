@@ -1124,21 +1124,11 @@ class ImageProcessor:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-    # Initialize FaceDetection
-    face_detector = FaceDetection()
-
-    # Test with an example image
-    example_image_path = "00001.png"  # Update to the correct image file
-    if not os.path.isfile(example_image_path):
-        logging.error(f"Test image not found: {example_image_path}")
-    else:
-        image = cv2.imread(example_image_path)
-        if image is None:
-            logging.error(f"Error reading image: {example_image_path}")
-        else:
-            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            models_to_use = ['mtcnn', 'frontalface', 'profileface']
-            detected_faces = face_detector.choose_model(models_to_use, image, gray_image)
-            print("Detected faces:", detected_faces)
+    try:
+        logging.info("Starting Obscurrra GUI application.")
+        app = ObscurrraGUI()
+        app.mainloop()
+        logging.info("Obscurrra GUI application closed.")
+    except Exception as e:
+        logging.error(f"Unhandled exception in the main execution: {e}")
+        raise
