@@ -1,6 +1,8 @@
 # Obscurra
 
-Obscurra is a Python-based image processing tool that detects and blurs faces in images using OpenCV. This repository contains the source code, documentation, and models used by the tool.
+Obscurra is a Python-based image processing tool designed to detect faces in images and apply a blur effect to anonymize them. The project aims to enhance privacy by automatically processing images to obscure identifiable facial features through a user-friendly graphical interface.
+
+This repository contains the source code, documentation, and models used by the tool.
 
 ## Features
 
@@ -9,55 +11,126 @@ Obscurra is a Python-based image processing tool that detects and blurs faces in
 - Supports multiple image formats: JPG, JPEG, PNG, and WEBP.
 - Modular design for easy maintenance and extensibility.
 
-## Installation
+## Objectives
 
-To use Obscurra, you need to have Python and OpenCV installed. Follow these steps to set up the environment:
+- Develop a tool to detect and blur faces in images.
+- Provide a simple GUI for image processing.
+- Compile the application into a portable executable.
 
-1. Clone the repository:
+## Timeline
 
-   ```sh
-   git clone https://github.com/yourusername/obscurra.git
-   cd obscurra
+### Phase 1: Planning (January - February 2024)
+
+- **Research:** Investigated face detection models and image processing techniques.
+- **Requirements:** Defined project scope and objectives.
+
+### Phase 2: Development (March - June 2024)
+
+- **Core Features:** Implemented face detection using Haar Cascade and MTCNN.
+- **GUI:** Developed a Tkinter-based user interface.
+
+### Phase 3: Testing and Optimization (July 2024)
+
+- **Testing:** Identified and resolved bugs.
+- **Optimization:** Enhanced performance and accuracy.
+
+### Phase 4: Deployment (August 2024)
+
+- **Executable:** Packaged application using PyInstaller.
+- **Documentation:** Created user and developer guides.
+
+## Achievements
+
+- Integrated multiple face detection models.
+- Developed a portable executable with a comprehensive GUI.
+- Enhanced user experience with real-time image processing updates.
+
+## Challenges and Bugs
+
+- **Model Integration:** Ensured compatibility between different face detection models.
+- **Performance:** Required optimization for processing speed and accuracy.
+- **GUI Usability:** Improved interface design based on user feedback.
+
+## Methodology
+
+The project followed an agile development process with iterative cycles of development, testing, and refinement, focusing on usability and performance.
+
+## Technologies Used
+
+- **Python**: Core language
+- **Tkinter**: GUI framework
+- **OpenCV**: Image processing
+- **TensorFlow**: MTCNN model
+- **PyInstaller**: Executable packaging
+
+## Project Structure
+
+```
+Obscurrra/
+├── src/
+│   ├── Obscurrra.py        # Main script
+│   ├── icon.ico            # Application icon
+│   ├── haarcascade_frontalface_default.xml # Frontal face detection model
+│   ├── haarcascade_profileface.xml # Profile face detection model
+│   ├── mtcnn_weights.npy   # MTCNN model weights
+└── dist/                   # Compiled executable
+```
+
+## User Guide
+
+1. **Download the Executable:** Obtain from the release section.
+2. **Run the Application:** Launch the GUI executable.
+3. **Process Images:**
+   - Select input and output folders.
+   - Choose detection models and set preferences.
+   - Click "Start Processing."
+
+## Developer Guide
+
+### Setup
+
+1. **Clone the Repository:**
+
+   ```bash
+   git clone https://github.com/jakujobi/obscurrra.git
+   cd obscurrra
    ```
-2. Create and activate a virtual environment:
+2. **Create a Virtual Environment and Install Dependencies:**
 
-   ```sh
+   ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-   ```
-3. Install the required dependencies:
-
-   ```sh
+   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
    pip install -r requirements.txt
    ```
+3. **Run the Application:**
 
-## Usage
-
-### Command Line
-
-1. Place the images you want to process in the input directory.
-2. Run the script:
-
-   ```sh
-   python src/obscurra/obscurra_v0_2.py
+   ```bash
+   python src/Obscurrra.py
    ```
-3. Processed images with blurred faces will be saved in the output directory.
 
-### Example
+### Building the Executable
 
-To see an example of how to use Obscurra, you can use the sample images provided in the `examples` directory:
+1. **Install PyInstaller:**
 
-```sh
-python src/obscurra/obscurra_v0_2.py --input_dir examples/input --output_dir examples/output
-```
+   ```bash
+   pip install pyinstaller
+   ```
+2. **Compile the Application:**
 
-## Contributing
-We welcome contributions! Please see CONTRIBUTING.md for more details on how to contribute to this project.
+   ```bash
+   pyinstaller --onefile --windowed src/Obscurrra.py
+   ```
 
-## License
-This project is licensed under the HPL3 License. See the LICENSE.md file for more details.
+## Future Improvements
 
-## Contact
-For any questions or suggestions, please contact:
-- John Akujobi: john@jakujobi.com
-```
+- Explore advanced face detection models.
+- Add real-time video processing capabilities.
+- Enhance cross-platform compatibility.
+
+## Contributors
+
+- **John Akujobi**- Project Lead, UI Designer, Software Engineer
+
+---
+
+This documentation provides a comprehensive yet concise overview of the **Obscurrra** project, highlighting key features, challenges, and future directions for both users and developers.
