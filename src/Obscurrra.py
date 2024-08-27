@@ -87,10 +87,8 @@ class ObscurrraGUI(tk.Tk):
         self.zoom_factor = 1.0
         self.selected_files = []
 
-        # Define the face detection model variables
+        # Define the face detection model variable
         self.mtcnn_var = tk.BooleanVar()
-        self.frontalface_var = tk.BooleanVar()
-        self.profileface_var = tk.BooleanVar()
 
         # Create a scrollable frame
         self.scrollable_frame = ScrollableFrame(self)
@@ -239,8 +237,6 @@ class ObscurrraGUI(tk.Tk):
         self.models_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
         self.mtcnn_checkbox = self.create_checkbox(middle_frame, "MTCNN", self.mtcnn_var, 1, 1, sticky="w")
-        self.frontalface_checkbox = self.create_checkbox(middle_frame, "Frontal Face", self.frontalface_var, 1, 2, sticky="w")
-        self.profileface_checkbox = self.create_checkbox(middle_frame, "Profile Face", self.profileface_var, 1, 3, sticky="w")
 
         # Preferences Frame
         settings_frame = ttk.LabelFrame(self.scrollable_frame.scrollable_frame, text="Preferences", padding="10")
@@ -375,12 +371,7 @@ class ObscurrraGUI(tk.Tk):
                 logging.error("MTCNN model is not initialized.")
                 return
             models.append('mtcnn')
-        if self.frontalface_var.get():
-            models.append('frontalface')
-            logging.info(f"Frontface model appended")
-        if self.profileface_var.get():
-            models.append('profileface')
-            logging.info(f"Frontface model appended")
+
 
         if not os.path.isdir(input_folder) and not self.selected_files:
             messagebox.showerror("Error", "Invalid input folder or no images selected")
@@ -509,10 +500,6 @@ class ObscurrraGUI(tk.Tk):
         models = []
         if self.mtcnn_var.get():
             models.append('mtcnn')
-        if self.frontalface_var.get():
-            models.append('frontalface')
-        if self.profileface_var.get():
-            models.append('profileface')
 
         if not os.path.isdir(input_folder) and not self.selected_files:
             messagebox.showerror("Error", "Invalid input folder or no images selected")
@@ -792,8 +779,6 @@ class FaceDetection:
     """
     Class for detecting faces in images using various models.
     """
-    FRONT_FACE_CASCADE_PATH = 'haarcascade_frontalface_default.xml'
-    PROFILE_FACE_CASCADE_PATH = 'haarcascade_profileface.xml'
     MTCNN_WEIGHTS_PATH = 'mtcnn_weights.npy'
 
     def __init__(self):
@@ -801,8 +786,6 @@ class FaceDetection:
         Initializes the FaceDetection class and loads face detection models.
         """
         logging.info("Initializing FaceDetection")
-        self._front_face_cascade = self._load_face_detection_model(FaceDetection.FRONT_FACE_CASCADE_PATH)
-        self._profile_face_cascade = self._load_face_detection_model(FaceDetection.PROFILE_FACE_CASCADE_PATH)
         self._mtcnn_detector = None
         self._initialize_mtcnn()
 
@@ -837,15 +820,15 @@ class FaceDetection:
             logging.error(f"Error loading face detection model: {e}")
             return None
 
-    @property
-    def front_face_cascade(self):
-        """Returns the front face cascade model."""
-        return self._front_face_cascade
+    # @property
+    # def front_face_cascade(self):
+    #     """Returns the front face cascade model."""
+    #     return self._front_face_cascade
 
-    @property
-    def profile_face_cascade(self):
-        """Returns the profile face cascade model."""
-        return self._profile_face_cascade
+    # @property
+    # def profile_face_cascade(self):
+    #     """Returns the profile face cascade model."""
+    #     return self._profile_face_cascade
 
     @property
     def mtcnn_detector(self):
@@ -873,10 +856,6 @@ class FaceDetection:
                     logging.error(f"Error detecting faces with MTCNN: {e}")
             else:
                 logging.error("MTCNN detector is not initialized.")
-        if 'frontalface' in models and self.front_face_cascade:
-            faces.extend(self.filter_faces(self.detect_faces(gray_image, self.front_face_cascade), faces))
-        if 'profileface' in models and self.profile_face_cascade:
-            faces.extend(self.filter_faces(self.detect_faces(gray_image, self.profile_face_cascade), faces))
         return faces
 
     @staticmethod
