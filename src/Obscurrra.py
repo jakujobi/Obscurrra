@@ -12,6 +12,16 @@ import time
 from mtcnn.mtcnn import MTCNN
 from concurrent.futures import ThreadPoolExecutor
 
+def get_resource_path(relative_path):
+    """ Get the absolute path to a resource, works for both PyInstaller bundles and development """
+    try:
+        # PyInstaller creates a temp folder and stores the path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 class ScrollableFrame(ttk.Frame):
     def __init__(self, container, *args, **kwargs):
@@ -367,11 +377,13 @@ class ObscurrraGUI(tk.Tk):
         models = []
         if self.mtcnn_var.get():
             if self.image_processor.face_detection.mtcnn_detector is None:
-                messagebox.showerror("Error", "MTCNN model is not initialized.")
-                logging.error("MTCNN model is not initialized.")
+                messagebox.showerror("Error", "MTCNN model is not initialized in start processing.")
+                logging.error("MTCNN model is not initialized in start processing.")
                 return
-            models.append('mtcnn')
-
+            models = ['mtcnn']
+        else:
+            messagebox.showerror("Error", "No face detection model selected.")
+            return
 
         if not os.path.isdir(input_folder) and not self.selected_files:
             messagebox.showerror("Error", "Invalid input folder or no images selected")
@@ -791,11 +803,19 @@ class FaceDetection:
 
     def _initialize_mtcnn(self):
         try:
+            weights_path = os.path.join(os.path.dirname(__file__), 'mtcnn_weights.npy')
+            logging.info(f"Looking for MTCNN weights at: {weights_path}")
+            
+            if not os.path.exists(weights_path):
+                logging.error("MTCNN weights file not found.")
+                raise FileNotFoundError("MTCNN weights file not found.")
+            
             logging.info("Initializing MTCNN model.")
             self._mtcnn_detector = MTCNN()
             logging.info("MTCNN model initialized successfully.")
         except Exception as e:
             logging.error(f"Error initializing MTCNN: {e}")
+            self._mtcnn_detector = None
 
     @staticmethod
     def _load_face_detection_model(model_path):
@@ -855,7 +875,7 @@ class FaceDetection:
                 except Exception as e:
                     logging.error(f"Error detecting faces with MTCNN: {e}")
             else:
-                logging.error("MTCNN detector is not initialized.")
+                logging.error("MTCNN detector is not initialized in choose model.")
         return faces
 
     @staticmethod

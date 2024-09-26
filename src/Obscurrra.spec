@@ -7,8 +7,6 @@ from ttkthemes import ThemedTk
 block_cipher = None
 
 # Define the location of the Haarcascade and MTCNN weights file
-haarcascade_frontalface_path = 'haarcascade_frontalface_default.xml'
-haarcascade_profileface_path = 'haarcascade_profileface.xml'
 mtcnn_weights_path = 'mtcnn_weights.npy'
 
 a = Analysis(
@@ -20,9 +18,7 @@ a = Analysis(
         ('obscuRRRa Logo Full.png', '.'),
         ('obscuRRRa Logo Monogram.png', '.'),
         ('obscuRRRa Profile image.png', '.'),
-        (mtcnn_weights_path, '.'),
-        (haarcascade_frontalface_path, '.'),
-        (haarcascade_profileface_path, '.')
+        (get_resource_path(mtcnn_weights_path), '.')  # Ensure MTCNN weights file is included
     ],
     hiddenimports=[
         'pkg_resources',
@@ -35,6 +31,7 @@ a = Analysis(
         'tensorflow._api.v2.compat.v2',
         'tensorflow._api.v2.compat.v2.compat',
         'tensorflow._api.v2.compat.v2.compat.v1',
+        'mtcnn'  # Explicitly include mtcnn in hidden imports
     ],
     hookspath=[],
     runtime_hooks=[],
